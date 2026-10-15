@@ -90,18 +90,49 @@ pipeline that needs macOS. Run `bun scripts/generate-brand-icons.ts`, or `--chec
 stack is now centred instead, so only `startup/splash.tsx` still anchors there. If you move one, check whether
 the other should move with it.
 
-### Known trap: `app.isPackaged` under `electron-vite dev`
+### Running the desktop on a machine without working Vulkan
 
-`src/main/service/desktop-cli.ts` picks its CLI with
-`!app.isPackaged && process.env.OPENCODE_DESKTOP_CLI_DEV`. Under `bun run dev:desktop` that flag reads as
-packaged, so the dev branch is skipped and the code falls through to `resolveBundledCli`, which looks for a
-binary that does not exist and fails with `spawn .../opencode-cli ENOENT`. The window still opens and the UI
-renders; chat does not work. Upstream behaviour, not introduced by the fork.
+On a Wayland session with no usable Vulkan, Electron warns
+`'--ozone-platform=wayland' is not compatible with Vulkan` at startup. That warning is not the crash; it
+predicts it. Minutes later the GPU process fails to launch and the app dies with:
+
+```
+GPU process launch failed: error_code=1002
+FATAL:content/browser/gpu/gpu_data_manager_impl_private.cc:417] GPU process isn't usable. Goodbye.
+```
+
+Electron takes its extra flags from the `ELECTRON_CLI_ARGS` environment variable as a JSON array, so:
+
+```bash
+ELECTRON_CLI_ARGS='["--disable-vulkan","--disable-gpu-sandbox"]' bun run dev:desktop
+```
+
+This is a machine configuration issue, not a repo defect, so nothing is patched here. Drop the flags on a
+machine with a working GPU; forcing `--disable-gpu` everywhere would cost real render performance.
+
+`bun run dev:desktop` forwards plain CLI arguments to electron-vite, which does not pass them on to Electron.
+The environment variable is the supported route.
+
+### Diagnosing the dev CLI, if it ever fails again
+
+`src/main/service/desktop-cli.ts` resolves the CLI with
+`!app.isPackaged && process.env.OPENCODE_DESKTOP_CLI_DEV`, and `scripts/dev.ts` exports
+`OPENCODE_DESKTOP_CLI_DEV` to point at the CLI source. Under dev both hold: the main log records
+`packaged: false` and then `v2 CLI background service ready`.
+
+`/proc/<pid>/environ` is not readable for the Electron main process on this machine, so it cannot show whether
+the variable arrived. Read the app's own log instead — it is written per run under
+`~/.config/ai.opencode.desktop.dev/logs/<timestamp>/main.log` — and look for `packaged:`,
+`v2 CLI background service ready`, and `ENOENT`. An earlier report of `spawn .../opencode-cli ENOENT` in dev
+could not be reproduced and was never explained; do not assume that failure mode is real without a log line
+backing it.
+
 
 ### Verify
 
 - `bun run dev:desktop` from the repo root, or `bun dev` from `packages/desktop`. HMR covers `packages/ui`, so
-  glyph and token edits show up without a restart.
+  glyph and token edits show up without a restart. Add the `ELECTRON_CLI_ARGS` from the Vulkan section above if
+  the app dies with a GPU fatal shortly after launching.
 - Check light and dark, and at least one width on each side of `768px`.
 - Centred stacks clip at both ends when the content is taller than its container, and the new-session parent is
   `overflow-hidden`, so a very short window cuts the composer off the top.
