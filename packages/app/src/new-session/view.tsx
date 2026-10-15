@@ -20,7 +20,6 @@ import { NEW_SESSION_CONTENT_WIDTH } from "@/new-session/layout"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import type { NewSessionWorkspaceController } from "./workspace/controller"
-import { NewSessionWordmark } from "./wordmark"
 
 const providerTipDismissalDuration = 30 * 24 * 60 * 60 * 1000
 
@@ -63,8 +62,7 @@ export function NewSessionView(props: {
         />
         <div class="absolute inset-0 flex items-center justify-center px-6">
           <div class={NEW_SESSION_CONTENT_WIDTH}>
-            <NewSessionWordmark />
-            <div class="mt-8 flex flex-col gap-8">
+            <div class="flex flex-col gap-8">
               <Composer model={props.composer} />
               <Show when={props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
