@@ -52,11 +52,11 @@ export function AnimatedWordmark(props: { active: boolean }) {
   onCleanup(() => timers.forEach(clearTimeout))
 
   return (
-    <svg class="settings-about-wordmark" viewBox="0 0 177 37" aria-hidden="true">
+    <svg class="settings-about-wordmark" viewBox="0 0 177 32" aria-hidden="true">
       <defs>
         <For each={Object.entries(WORDMARK_GLYPHS)}>
           {([letter, path]) => (
-            <symbol id={`settings-about-letter-${letter}`} viewBox="0 0 27 37">
+            <symbol id={`settings-about-letter-${letter}`} viewBox="0 0 27 32">
               <path class="settings-about-letter-shadow" d={path} transform="translate(2,2)" />
               <path d={path} />
             </symbol>
@@ -65,7 +65,7 @@ export function AnimatedWordmark(props: { active: boolean }) {
       </defs>
       <For each={state.letters}>
         {(letter, index) => (
-          <use href={`#settings-about-letter-${letter}`} x={index() * PITCH} width="27" height="37" />
+          <use href={`#settings-about-letter-${letter}`} x={index() * PITCH} width="27" height="32" />
         )}
       </For>
     </svg>

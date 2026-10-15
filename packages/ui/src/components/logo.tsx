@@ -2,8 +2,7 @@ import { type ComponentProps } from "solid-js"
 import { WORDMARK, WORDMARK_VIEWBOX } from "../typography/wordmark/glyphs"
 
 // The mark is a 3x3 grid of blocks inside a 250 unit box, with the top-left, centre and
-// bottom-right cells left empty. Kept as a single path so theming stays one fill and the
-// outline treatment used by the wordmark keeps working.
+// bottom-right cells left empty. Kept as a single path so theming stays one fill.
 const MARK = "M0 167H83V250H0ZM83 167H167V250H83ZM167 83H250V167H167ZM83 0H167V83H83ZM167 0H250V83H167ZM0 83H83V167H0Z"
 
 export const Mark = (props: { class?: string }) => {
@@ -35,6 +34,8 @@ export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => {
   )
 }
 
+// "quanta" in the mark's block grid. Every letter shares one baseline, so the word reads as a
+// single line rather than a q that drops out of it.
 export const Logo = (props: { class?: string }) => {
   return (
     <svg
