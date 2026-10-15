@@ -1,9 +1,14 @@
+import { WORDMARK_GLYPHS, WORDMARK_LETTERS } from "@opencode/ui/wordmark/glyphs"
 import { createEffect, For, on, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 
-const target = ["o", "p", "e", "n", "c", "o", "d", "e"] as const
+// "quanta" set in the mark's 5x7 block grid. Each glyph symbol draws the letter at the origin
+// and repeats it two units down and right for the shadow layer, so the symbol box is 27x37.
+const target = WORDMARK_LETTERS
 
-const choices = ["o", "p", "e", "n", "c", "d"] as const
+const choices = [...new Set(WORDMARK_LETTERS)]
+
+const PITCH = 30
 
 export function AnimatedWordmark(props: { active: boolean }) {
   const [state, setState] = createStore({ letters: [...target] })
@@ -47,36 +52,20 @@ export function AnimatedWordmark(props: { active: boolean }) {
   onCleanup(() => timers.forEach(clearTimeout))
 
   return (
-    <svg class="settings-about-wordmark" viewBox="0 0 234 42" aria-hidden="true">
+    <svg class="settings-about-wordmark" viewBox="0 0 177 37" aria-hidden="true">
       <defs>
-        <symbol id="settings-about-letter-o" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M18 30H6V18H18V30Z" />
-          <path d="M18 12H6V30H18V12ZM24 36H0V6H24V36Z" />
-        </symbol>
-        <symbol id="settings-about-letter-p" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M18 30H6V18H18V30Z" />
-          <path d="M6 30H18V12H6V30ZM24 36H6V42H0V6H24V36Z" />
-        </symbol>
-        <symbol id="settings-about-letter-e" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M24 24V30H6V24H24Z" />
-          <path d="M24 24H6V30H24V36H0V6H24V24ZM6 18H18V12H6V18Z" />
-        </symbol>
-        <symbol id="settings-about-letter-n" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M18 36H6V18H18V36Z" />
-          <path d="M18 12H6V36H0V6H18V12ZM24 36H18V12H24V36Z" />
-        </symbol>
-        <symbol id="settings-about-letter-c" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M24 30H6V18H24V30Z" />
-          <path d="M24 12H6V30H24V36H0V6H24V12Z" />
-        </symbol>
-        <symbol id="settings-about-letter-d" viewBox="0 0 24 42">
-          <path class="settings-about-letter-shadow" d="M18 30H6V18H18V30Z" />
-          <path d="M18 12H6V30H18V12ZM24 36H0V6H18V0H24V36Z" />
-        </symbol>
+        <For each={Object.entries(WORDMARK_GLYPHS)}>
+          {([letter, path]) => (
+            <symbol id={`settings-about-letter-${letter}`} viewBox="0 0 27 37">
+              <path class="settings-about-letter-shadow" d={path} transform="translate(2,2)" />
+              <path d={path} />
+            </symbol>
+          )}
+        </For>
       </defs>
       <For each={state.letters}>
         {(letter, index) => (
-          <use href={`#settings-about-letter-${letter}`} x={index() * 30} width="24" height="42" />
+          <use href={`#settings-about-letter-${letter}`} x={index() * PITCH} width="27" height="37" />
         )}
       </For>
     </svg>
