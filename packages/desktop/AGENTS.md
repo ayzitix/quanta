@@ -90,6 +90,31 @@ pipeline that needs macOS. Run `bun scripts/generate-brand-icons.ts`, or `--chec
 stack is now centred instead, so only `startup/splash.tsx` still anchors there. If you move one, check whether
 the other should move with it.
 
+### Composer layout
+
+The composer is two stacked regions, and the split between them is load-bearing.
+
+- `<form data-component="composer">` is the tray. `[data-slot="composer-bar"]` is its **sibling**, directly below,
+  both inside the editor root (`flex flex-col gap-2`).
+- Keep the bar outside the form. The add menu, agent and model controls used to sit inside the form next to the
+  submit button; that gave the tray a second full row and made it roughly twice its intended height while looking
+  like a one-line input.
+- The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
+  `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
+  height and hid the regression.
+- The submit button is `size-7` (28px) and floats over the tray at `absolute end-2 bottom-1.5`. That offset centers
+  it on one line: `(40 − 28) / 2 = 6px`. If you change the tray height or the button size, recompute the offset from
+  that formula instead of nudging it by eye.
+- Because the button floats over the text, the contenteditable needs `pe-14` to keep the last character clear of it.
+  Removing that padding puts text under the button as soon as a line fills.
+- The tray has no elevation. Do not put `shadow-[var(--v2-elevation-raised)]` back on the form — raised elevation
+  belongs to popovers, which still use it.
+- Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in
+  `providers/models/select-dialog.tsx`. The bar carries the add menu, agent and model only. Do not move the variant
+  control back onto the bar.
+- The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
+  exposes, so extra fade is an opacity modifier, not a second token.
+
 ### Running the desktop on a machine without working Vulkan
 
 On a Wayland session with no usable Vulkan, Electron warns
@@ -127,12 +152,19 @@ the variable arrived. Read the app's own log instead — it is written per run u
 could not be reproduced and was never explained; do not assume that failure mode is real without a log line
 backing it.
 
-
 ### Verify
 
 - `bun run dev:desktop` from the repo root, or `bun dev` from `packages/desktop`. HMR covers `packages/ui`, so
   glyph and token edits show up without a restart. Add the `ELECTRON_CLI_ARGS` from the Vulkan section above if
   the app dies with a GPU fatal shortly after launching.
+- Never pipe `bun typecheck` into `tail` or `head` and then read the exit status. A pipeline reports the _filter's_
+  status, so `bun typecheck 2>&1 | tail -4` exits 0 on a file with unbalanced JSX while the dev server prints
+  `Expected corresponding JSX closing tag for <form>`. Redirect to a file and read `$?`, or do not pipe.
+- Composer geometry is cheaper to check from the class names than from a screenshot. The renderer cannot be
+  inspected over plain HTTP: `http://localhost:5173` renders an empty document outside Electron because the app
+  needs the preload bridge, so DOM measurement in a plain browser proves nothing. Read the `min-h-*` on the
+  contenteditable and the `size-*` plus `bottom-*` on the submit button and check the arithmetic, then confirm the
+  shape in the running app.
 - Check light and dark, and at least one width on each side of `768px`.
 - Centred stacks clip at both ends when the content is taller than its container, and the new-session parent is
   `overflow-hidden`, so a very short window cuts the composer off the top.
