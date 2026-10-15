@@ -261,6 +261,7 @@ export function ModelSelectorPopover(props: {
   model?: ModelState
   unpaid?: boolean
   trigger: ModelSelectorTrigger
+  footer?: JSX.Element
   onClose?: () => void
 }) {
   const dialog = useDialog()
@@ -305,6 +306,7 @@ export function ModelSelectorPopover(props: {
           groups={controller.groups}
           current={controller.current()}
           chatgptPlan={chatgptPlan()}
+          footer={props.footer}
           select={controller.select}
           onManage={manage}
           onClose={() => props.onClose?.()}
@@ -501,6 +503,7 @@ export function ModelSelectorPopoverView(props: {
   groups: (models: ModelItem[]) => { category: string; items: ModelItem[] }[]
   current: string | undefined
   chatgptPlan?: boolean
+  footer?: JSX.Element
   select: (item: ModelItem) => void
   onManage: () => void
   onClose: () => void
@@ -763,6 +766,10 @@ export function ModelSelectorPopoverView(props: {
               </Show>
             </div>
           </ScrollView>
+          <Show when={props.footer}>
+            <div class="h-px bg-v2-border-border-muted" />
+            <div class="flex flex-col p-0.5">{props.footer}</div>
+          </Show>
           <div class="h-px bg-v2-border-border-muted" />
           <div class="flex flex-col p-0.5">
             <Menu.Item

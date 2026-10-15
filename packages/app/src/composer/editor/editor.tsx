@@ -159,7 +159,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       : undefined
 
   return (
-    <div class={`relative size-full flex flex-col gap-0 ${props.class ?? ""}`}>
+    <div class={`relative size-full flex flex-col gap-2 ${props.class ?? ""}`}>
       <input
         ref={props.controller.setFileInput}
         type="file"
@@ -186,10 +186,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       <form
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
-        class="group/composer relative min-h-[96px] w-full overflow-clip rounded-xl bg-v2-background-bg-base"
-        classList={{
-          "shadow-[var(--v2-elevation-raised)]": !props.borderUnderlay,
-        }}
+        class="group/composer relative min-h-0 w-full overflow-clip rounded-xl bg-v2-background-bg-base"
         onSubmit={(event) => {
           event.preventDefault()
 
@@ -219,7 +216,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
         <ScrollView
           data-component="composer-scroll"
-          class="min-h-[60px] max-h-[180px]"
+          class="min-h-0 max-h-[180px]"
           viewportRef={(element) => {
             viewport = element
             element.tabIndex = -1
@@ -241,7 +238,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-[60px] w-full whitespace-pre-wrap bg-transparent px-4 pt-4 pb-2 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-14 ps-4 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -297,7 +294,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Show when={!props.controller.value()}>
             <div
               dir={state.mode === "normal" ? "auto" : "ltr"}
-              class="pointer-events-none absolute inset-x-0 top-0 px-4 pt-4 text-[13px] font-[440] leading-5 text-v2-text-text-faint"
+              class="pointer-events-none absolute inset-x-0 top-0 px-4 pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
               classList={{ "font-mono!": state.mode === "shell" }}
               style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
             >
@@ -309,104 +306,90 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </Show>
         </ScrollView>
 
-        <div class="flex h-11 items-center px-2">
-          <div
-            class="flex shrink-0 items-center"
-            aria-hidden={state.mode === "shell"}
-            inert={state.mode === "shell" ? true : undefined}
-            style={buttons()}
-          >
-            <ComposerEditorAddMenu
-              disabled={view.draftOnly || state.mode === "shell"}
-              title={i18n.t("ui.promptInput.add")}
-              keybind={props.attachKeybind ?? ["Mod", "U"]}
-              attachLabel={i18n.t("ui.promptInput.attachments")}
-              attachShortcut={props.attachShortcut ?? "Mod+U"}
-              commandsLabel={i18n.t("ui.promptInput.commands")}
-              contextLabel={i18n.t("ui.promptInput.context")}
-              shellLabel={i18n.t("ui.promptInput.shell")}
-              onAttach={props.controller.attach}
-              onCommands={props.controller.openCommands}
-              onContext={props.controller.openContext}
-              onShell={props.controller.openShell}
+        <div data-slot="composer-actions" class="absolute end-2 bottom-1.5 flex shrink-0 items-center">
+          <Show when={state.mode === "normal"}>
+            <ComposerEditorAlternateDelivery
+              controller={props.controller}
+              keybind={props.alternateKeybind ?? ["Mod", "Enter"]}
             />
-          </div>
-          <div
-            ref={controlsViewport}
-            data-slot="composer-controls"
-            data-overflow-start={overflow.start}
-            data-overflow-end={overflow.end}
-            class="ms-1 me-3 h-full min-w-0 flex-1 overflow-x-auto overscroll-x-contain no-scrollbar"
-            onScroll={updateOverflow}
-            aria-hidden={state.mode === "shell"}
-            inert={state.mode === "shell" ? true : undefined}
-            style={buttons()}
-          >
-            <div ref={controlsContent} class="flex h-full w-max min-w-full items-center gap-1">
-              <Show when={view.agent} keyed>
-                {(control) => (
-                  <ComposerEditorConfiguredSelect
-                    title={i18n.t("ui.promptInput.chooseAgent")}
-                    keybind={["Mod", "."]}
-                    control={control}
-                  />
-                )}
-              </Show>
-              <Show when={props.modelControlsVisible ?? true}>
-                {props.modelControl}
-                <Show when={view.variant} keyed>
-                  {(control) => (
-                    <Show when={control.options().length > 1}>
-                      <ComposerEditorConfiguredSelect
-                        mobileDrawer
-                        title={i18n.t("ui.promptInput.chooseVariant")}
-                        keybind={["Shift", "Mod", "D"]}
-                        control={control}
-                        class={control.current() === "default" ? "composer-variant-default" : undefined}
-                      />
-                    </Show>
-                  )}
-                </Show>
-              </Show>
-            </div>
-          </div>
-          <div data-slot="composer-actions" class="flex shrink-0 items-center">
-            <Show when={state.mode === "normal"}>
-              <ComposerEditorAlternateDelivery
-                controller={props.controller}
-                keybind={props.alternateKeybind ?? ["Mod", "Enter"]}
-              />
-            </Show>
-            <Show when={state.mode === "shell"}>
-              <Button
-                data-action="composer-exit-shell"
-                type="button"
-                variant="ghost-faint"
-                size="small"
-                class="me-3 gap-1.5 px-1.5"
-                onClick={() => {
-                  props.controller.dispatch({ type: "mode.normal" })
-                  props.controller.restoreFocus()
-                }}
-              >
-                {i18n.t("ui.promptInput.exitShell")}
-                <span class="hidden sm:block">
-                  <Keybind keys={props.exitShellKeybind ?? ["ESC"]} variant="neutral" />
-                </span>
-              </Button>
-            </Show>
-            <ComposerEditorSubmitButton
-              mode={state.mode}
-              stopping={view.submit.stopping()}
-              disabled={!props.controller.canSubmit()}
-              sendLabel={i18n.t("ui.promptInput.send")}
-              stopLabel={i18n.t("ui.promptInput.stop")}
-              onSubmit={() => props.controller.submit()}
-              onStop={props.controller.stop}
-            />
-          </div>
+          </Show>
+          <Show when={state.mode === "shell"}>
+            <Button
+              data-action="composer-exit-shell"
+              type="button"
+              variant="ghost-faint"
+              size="small"
+              class="me-3 gap-1.5 px-1.5"
+              onClick={() => {
+                props.controller.dispatch({ type: "mode.normal" })
+                props.controller.restoreFocus()
+              }}
+            >
+              {i18n.t("ui.promptInput.exitShell")}
+              <span class="hidden sm:block">
+                <Keybind keys={props.exitShellKeybind ?? ["ESC"]} variant="neutral" />
+              </span>
+            </Button>
+          </Show>
+          <ComposerEditorSubmitButton
+            mode={state.mode}
+            stopping={view.submit.stopping()}
+            disabled={!props.controller.canSubmit()}
+            sendLabel={i18n.t("ui.promptInput.send")}
+            stopLabel={i18n.t("ui.promptInput.stop")}
+            onSubmit={() => props.controller.submit()}
+            onStop={props.controller.stop}
+          />
         </div>
       </form>
+
+      <div data-slot="composer-bar" class="flex h-9 items-center gap-1 px-1">
+        <div
+          class="flex shrink-0 items-center"
+          aria-hidden={state.mode === "shell"}
+          inert={state.mode === "shell" ? true : undefined}
+          style={buttons()}
+        >
+          <ComposerEditorAddMenu
+            disabled={view.draftOnly || state.mode === "shell"}
+            title={i18n.t("ui.promptInput.add")}
+            keybind={props.attachKeybind ?? ["Mod", "U"]}
+            attachLabel={i18n.t("ui.promptInput.attachments")}
+            attachShortcut={props.attachShortcut ?? "Mod+U"}
+            commandsLabel={i18n.t("ui.promptInput.commands")}
+            contextLabel={i18n.t("ui.promptInput.context")}
+            shellLabel={i18n.t("ui.promptInput.shell")}
+            onAttach={props.controller.attach}
+            onCommands={props.controller.openCommands}
+            onContext={props.controller.openContext}
+            onShell={props.controller.openShell}
+          />
+        </div>
+        <div
+          ref={controlsViewport}
+          data-slot="composer-controls"
+          data-overflow-start={overflow.start}
+          data-overflow-end={overflow.end}
+          class="min-w-0 flex-1 overflow-x-auto overscroll-x-contain no-scrollbar"
+          onScroll={updateOverflow}
+          aria-hidden={state.mode === "shell"}
+          inert={state.mode === "shell" ? true : undefined}
+          style={buttons()}
+        >
+          <div ref={controlsContent} class="flex h-full w-max min-w-full items-center gap-1">
+            <Show when={view.agent} keyed>
+              {(control) => (
+                <ComposerEditorConfiguredSelect
+                  title={i18n.t("ui.promptInput.chooseAgent")}
+                  keybind={["Mod", "."]}
+                  control={control}
+                />
+              )}
+            </Show>
+            <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

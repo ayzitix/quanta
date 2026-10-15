@@ -1,4 +1,4 @@
-import { Show, createMemo } from "solid-js"
+import { For, Show, createMemo, type JSX } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
@@ -24,6 +24,14 @@ export function Composer(props: {
   const command = useCommand()
   const language = useLanguage()
 
+  // Reasoning effort is per model, so it only makes sense next to the model picker rather than
+  // on the bar, where it read as a second global mode.
+  const variant = () => props.model.model.selection.variant
+  const variantOptions = createMemo(() =>
+    ["default", ...variant().list()].map((value) => ({ id: value, label: value })),
+  )
+  const variantCurrent = () => variant().current() ?? "default"
+
   return (
     <div class="flex flex-col gap-3">
       <ComposerEditor
@@ -46,6 +54,30 @@ export function Composer(props: {
             model={props.model.model.selection}
             provider={props.model.model.selection.current()?.provider}
             modelName={props.model.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
+            footer={
+              <Show when={variantOptions().length > 1}>
+                <div
+                  class="flex items-center gap-1 px-1.5 py-1"
+                  role="group"
+                  aria-label={language.t("ui.promptInput.chooseVariant")}
+                >
+                  <For each={variantOptions()}>
+                    {(option) => (
+                      <button
+                        type="button"
+                        class="h-6 min-w-0 flex-1 truncate rounded-sm px-2 text-[13px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-faint transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none"
+                        classList={{
+                          "bg-v2-overlay-simple-overlay-hover! text-v2-text-text-base!": variantCurrent() === option.id,
+                        }}
+                        onClick={() => variant().set(option.id === "default" ? undefined : option.id)}
+                      >
+                        {option.label}
+                      </button>
+                    )}
+                  </For>
+                </div>
+              </Show>
+            }
             onClose={props.model.restoreFocus}
             onUnpaidClick={() => dialog.show(() => <DialogSelectModelUnpaid model={props.model.model.selection} />)}
           />
@@ -63,6 +95,7 @@ function ComposerModelControl(props: {
   model: ComposerModel["model"]["selection"]
   provider?: { id: string; canonical?: string; name: string }
   modelName: string
+  footer?: JSX.Element
   onClose: () => void
   onUnpaidClick: () => void
 }) {
@@ -119,6 +152,7 @@ function ComposerModelControl(props: {
           <ModelSelectorPopover
             model={props.model}
             unpaid={!props.paid}
+            footer={props.footer}
             trigger={(triggerProps) => (
               <Button
                 {...triggerProps}
