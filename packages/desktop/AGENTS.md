@@ -102,9 +102,11 @@ The composer is two stacked regions, and the split between them is load-bearing.
 - The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
   `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
   height and hid the regression.
-- The submit button is `size-7` (28px) and floats over the tray at `absolute end-2 bottom-1.5`. That offset centers
-  it on one line: `(40 − 28) / 2 = 6px`. If you change the tray height or the button size, recompute the offset from
-  that formula instead of nudging it by eye.
+- The submit button is `size-7` (28px) and floats over the tray at `absolute end-1.5 bottom-1.5`. All three
+  gaps are 6px: the vertical ones come from `(40 − 28) / 2`, and the inset matches so the button is not
+  tighter to the right edge than to the top and bottom. Recompute from that formula rather than nudging it by
+  eye, and keep the three equal if either dimension changes.
+- Send is `arrow-up` and stop is `stop`.
 - Because the button floats over the text, the contenteditable needs `pe-14` to keep the last character clear of it.
   Removing that padding puts text under the button as soon as a line fills.
 - The actions row needs `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
@@ -112,8 +114,9 @@ The composer is two stacked regions, and the split between them is load-bearing.
   every click meant for the actions: the button looks fine, `elementFromPoint` at its centre returns the editor, and
   the caret just blinks there instead of the control behaving like a button.
 - The submit button is `variant="ghost"`, not `submit`. `submit` paints a contrast fill with
-  `--v2-elevation-button-contrast`, which is a second elevation on a tray that is meant to stay flat. Send is
-  `enter` and stop is `stop`.
+  `--v2-elevation-button-contrast`, which is a second elevation on a tray that is meant to stay flat. The tray's
+  flatness and this are the same decision: the button fills with `bg-inverse` / `danger/20` instead of a variant
+  that carries its own shadow.
 - The tray has no elevation. Do not put `shadow-[var(--v2-elevation-raised)]` back on the form — raised elevation
   belongs to popovers, which still use it.
 - Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in
