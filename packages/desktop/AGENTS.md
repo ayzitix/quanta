@@ -107,6 +107,13 @@ The composer is two stacked regions, and the split between them is load-bearing.
   that formula instead of nudging it by eye.
 - Because the button floats over the text, the contenteditable needs `pe-14` to keep the last character clear of it.
   Removing that padding puts text under the button as soon as a line fills.
+- The actions row needs `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
+  positioned element without a z-index loses to any element that has one. Without the higher stack the tray swallows
+  every click meant for the actions: the button looks fine, `elementFromPoint` at its centre returns the editor, and
+  the caret just blinks there instead of the control behaving like a button.
+- The submit button is `variant="ghost"`, not `submit`. `submit` paints a contrast fill with
+  `--v2-elevation-button-contrast`, which is a second elevation on a tray that is meant to stay flat. Send is
+  `enter` and stop is `stop`.
 - The tray has no elevation. Do not put `shadow-[var(--v2-elevation-raised)]` back on the form — raised elevation
   belongs to popovers, which still use it.
 - Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in

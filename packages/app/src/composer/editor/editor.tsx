@@ -306,7 +306,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </Show>
         </ScrollView>
 
-        <div data-slot="composer-actions" class="absolute end-2 bottom-1.5 flex shrink-0 items-center">
+        {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
+            without a higher stack the tray would swallow clicks meant for these actions. */}
+        <div data-slot="composer-actions" class="absolute end-2 bottom-1.5 z-20 flex shrink-0 items-center">
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
               controller={props.controller}
@@ -1126,8 +1128,8 @@ export function ComposerEditorSubmitButton(props: {
         type="button"
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
-        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />}
-        variant="submit"
+        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
+        variant="ghost"
         class="size-7 rounded-md p-[6px]"
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
