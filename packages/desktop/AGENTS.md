@@ -110,11 +110,17 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - Both buttons are `size-6` (24px) inside the tray, at `start-2`/`end-2` and `bottom-2`. All three gaps are 8px:
   `(40 − 24) / 2`, and the horizontal inset matches so neither button is tighter to its edge than to the top and
   bottom. Send is `arrow-up`, stop is `stop`.
-- The tray's text padding is `ps-11 pe-11` (44px), which clears a 24px button sitting 8px in: `8 + 24 + 12`. The
-  placeholder overlay carries the same padding on its own `absolute` layer and does **not** inherit the
-  contenteditable's — when the two disagree the hint slides under the add button.
-- The scroll thumb is offset with `inset-inline-end: 32px`: the button's width plus its inset. It rides the right
-  edge by default, which is where the send button floats, and the two overlapped.
+- The tray's leading text padding is `ps-11` (44px), which clears a 24px add button sitting 8px in: `8 + 24 + 12`.
+  The placeholder overlay carries the same padding on its own `absolute` layer and does **not** inherit the
+  contenteditable's — when the two disagree the hint slides under the add button. The trailing side is measured,
+  see below.
+- The trailing actions row is **measured**, not assumed. A `ResizeObserver` on `[data-slot="composer-actions"]`
+  publishes its width as `--composer-actions` on the tray, and both the editor's trailing padding and the
+  scroll thumb's offset derive from it: `pe-[calc(var(--composer-actions,44px)+12px)]` and
+  `inset-inline-end: calc(var(--composer-actions,24px)+8px)`. The row carries the model chip, whose width follows
+  the session, so any fixed number strands one or the other — the text runs under the chip, or the scroll thumb
+  ends up between the chip and the submit button. The observer takes an **accessor** (`() => actions`); passing
+  the bare variable watches `undefined` and fails silently.
 - The floating rows need `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
   positioned element without a z-index loses to any element that has one. Without the higher stack the tray swallows
   every click meant for its actions: the button still measures right, but `elementFromPoint` at its centre returns

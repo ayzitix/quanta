@@ -190,10 +190,12 @@
   transform: rotate(180deg);
 }
 
-/* The vertical scroll thumb rides the right edge, which is exactly where the send button floats, and the
-   two overlapped by the button's inset. Offset it past the control: 8px inset plus the 24px button. */
+/* The vertical scroll thumb rides the trailing edge, which is exactly where the actions row floats, and the
+   two overlap. The row is not a fixed width — it carries the model chip, whose length follows the session — so
+   the offset is taken from the measured row the text padding already uses, plus the row's own 8px inset. A
+   fixed number here is what left the thumb stranded between the chip and the send button. */
 [data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
-  inset-inline-end: 32px;
+  inset-inline-end: calc(var(--composer-actions, 24px) + 8px);
 }
 
 /* Registered so the angle interpolates: an unregistered custom property would jump instead of sweep,

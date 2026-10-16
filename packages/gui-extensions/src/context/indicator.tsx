@@ -117,7 +117,7 @@ export function SessionContextUsage(props: {
           legible at the same time. */}
       <ProgressCircle
         appearance={props.iconOnly ? "indicator" : "compact"}
-        size={props.iconOnly ? 14 : 16}
+        size={16}
         strokeWidth={props.iconOnly ? 2 : undefined}
         percentage={context()?.usage ?? 0}
         style={

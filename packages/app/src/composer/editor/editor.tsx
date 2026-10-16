@@ -101,6 +101,18 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let viewport: HTMLDivElement | undefined
   let controlsViewport!: HTMLDivElement
   let controlsContent!: HTMLDivElement
+  let tray: HTMLFormElement | undefined
+  let actions: HTMLDivElement | undefined
+
+  // The trailing actions hold the model chip and the submit button, and their width is not knowable from CSS:
+  // the chip carries whatever the session runs on, and it changes with the model, the language and the plan.
+  // Measure the row and publish it, so the text clears all of it. Reserving only the submit button — which is
+  // what a fixed trailing padding does — leaves the chip sitting on the last line of a long prompt.
+  createResizeObserver(
+    () => actions,
+    (rect) => tray?.style.setProperty("--composer-actions", `${Math.ceil(rect.width)}px`),
+  )
+
   const [overflow, setOverflow] = createStore({ start: false, end: false })
 
   const updateOverflow = () => {
@@ -186,6 +198,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
         />
       </Show>
       <form
+        ref={tray}
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
         class="group/composer relative min-h-0 w-full overflow-clip bg-v2-background-bg-base"
@@ -240,7 +253,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-11 ps-11 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-11 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -296,7 +309,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Show when={!props.controller.value()}>
             <div
               dir={state.mode === "normal" ? "auto" : "ltr"}
-              class="pointer-events-none absolute inset-x-0 top-0 ps-11 pe-11 pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
+              class="pointer-events-none absolute inset-x-0 top-0 ps-11 pe-[calc(var(--composer-actions,44px)+12px)] pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
               classList={{ "font-mono!": state.mode === "shell" }}
               style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
             >
@@ -333,10 +346,19 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions. */}
-        <div data-slot="composer-actions" class="absolute end-2 bottom-2 z-20 flex shrink-0 items-center">
+        <div
+          ref={actions}
+          data-slot="composer-actions"
+          class="absolute end-2 bottom-2 z-20 flex max-w-[calc(100%-104px)] items-center"
+        >
           {/* The model rides in the tray, not the bar: it names the thing the prompt is about to run on, so
               it reads as part of the sentence's own furniture the way the reference does. The bar keeps the
-              instrument cluster — thinking gauge and context ring — which are readouts, not inputs. */}
+              instrument cluster — thinking gauge and context ring — which are readouts, not inputs.
+
+              The row is capped at the tray's width less what the text needs: 52px reserved at the leading
+              edge for the add button and 44px at the trailing edge for the submit button, plus an 8px gap.
+              Without it a long model name takes the whole tray and the text runs under it. The chip shrinks
+              inside the cap and its label ellipsises. */}
           <Show when={state.mode === "normal"}>
             <div class="me-1 flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
               <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
@@ -945,7 +967,7 @@ function ComposerThinkingGauge(props: { options: ComposerOption[]; current: stri
   // `opacity-50`, which is the part the two rings share. The arc and the needle stay at full strength, so a
   // colour reads as itself; dimmed, even red-600 comes out dusty and never reads as red.
   return (
-    <svg viewBox="0 0 16 16" class="size-3.5 shrink-0" aria-hidden="true">
+    <svg viewBox="0 0 16 16" class="size-4 shrink-0" aria-hidden="true">
       <circle
         cx="8"
         cy="8"
