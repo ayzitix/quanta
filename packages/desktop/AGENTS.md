@@ -126,6 +126,10 @@ The composer is two stacked regions, and the split between them is load-bearing.
   that carries its own shadow.
 - The tray has no elevation. Do not put `shadow-[var(--v2-elevation-raised)]` back on the form — raised elevation
   belongs to popovers, which still use it.
+- The tray's 1px rim is a `::before` pseudo-element masked to the border, not a `border` and not a box-shadow. A
+  real border takes a pixel out of the content box and breaks the 40px the button inset is derived from; a
+  box-shadow would replace the mask ring from `[data-dock-border-underlay]` rather than stack on it, because the
+  later declaration wins outright. The `::after` glint sits on this same rim.
 - Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in
   `providers/models/select-dialog.tsx`. The bar carries the add menu, agent and model only. Do not move the variant
   control back onto the bar.

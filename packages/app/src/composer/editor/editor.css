@@ -33,6 +33,28 @@
   border-radius: min(50%, 20px);
 }
 
+/* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
+   affordance appears on focus. It is a pseudo-element rather than a border for two reasons: a real border
+   eats a pixel of the tray's content box and breaks the 40px height the button inset is derived from, and a
+   box-shadow here would replace the mask ring from [data-dock-border-underlay] instead of stacking on it. */
+[data-component="composer"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 /* The vertical scroll thumb rides the right edge, which is exactly where the send button floats, and the
    two overlapped by the button's inset. Offset it past the control: 6px inset plus the 28px button. */
 [data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
