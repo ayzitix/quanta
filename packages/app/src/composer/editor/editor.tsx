@@ -186,7 +186,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       <form
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
-        class="group/composer relative min-h-0 w-full overflow-clip rounded-xl bg-v2-background-bg-base"
+        class="group/composer relative min-h-0 w-full overflow-clip rounded-full bg-v2-background-bg-base"
         onSubmit={(event) => {
           event.preventDefault()
 
@@ -1130,8 +1130,11 @@ export function ComposerEditorSubmitButton(props: {
         tabIndex={props.mode === "normal" ? undefined : -1}
         icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
         variant="ghost"
-        class="size-7 rounded-md p-[6px]"
+        class="size-7 rounded-full p-[6px]"
         classList={{
+          // Mutually exclusive keys rather than a base colour the stop state overrules: two background
+          // utilities in one cascade position it on stylesheet order, not on intent.
+          "bg-v2-background-bg-inverse text-v2-text-text-inverse": !props.stopping,
           // A translucent wash of the danger foreground, not state-bg-danger: that token resolves to
           // red-1200 in dark, which reads as near-black rather than a red control.
           "bg-v2-state-fg-danger/20 text-v2-state-fg-danger": props.stopping,
