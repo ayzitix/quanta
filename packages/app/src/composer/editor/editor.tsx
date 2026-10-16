@@ -186,7 +186,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       <form
         data-component="composer"
         data-dock-border-underlay={props.borderUnderlay ? "true" : undefined}
-        class="group/composer relative min-h-0 w-full overflow-clip rounded-full bg-v2-background-bg-base"
+        class="group/composer relative min-h-0 w-full overflow-clip bg-v2-background-bg-base"
         onSubmit={(event) => {
           event.preventDefault()
 

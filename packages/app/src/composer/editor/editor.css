@@ -25,6 +25,20 @@
   );
 }
 
+/* Pill at the one-line height, capped so a tall tray does not turn into a lozenge. A percentage radius
+   resolves against the box, so rounded-full is 20px on a 40px tray and 90px on the 180px maximum, where
+   the semicircular ends swallow the start and end of every line. The cap matches the one-line tray, so
+   raising that height is the one edit that moves this number too. */
+[data-component="composer"] {
+  border-radius: min(50%, 20px);
+}
+
+/* The vertical scroll thumb rides the right edge, which is exactly where the send button floats, and the
+   two overlapped by the button's inset. Offset it past the control: 6px inset plus the 28px button. */
+[data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
+  inset-inline-end: 34px;
+}
+
 /* Registered so the angle interpolates: an unregistered custom property would jump instead of sweep,
    which is what made the earlier pass look like it stalled between iterations. */
 @property --composer-glint-angle {

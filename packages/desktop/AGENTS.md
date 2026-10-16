@@ -102,6 +102,10 @@ The composer is two stacked regions, and the split between them is load-bearing.
 - The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
   `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
   height and hid the regression.
+- The tray's radius is `min(50%, 20px)`, not `rounded-full`. A percentage radius resolves against the box, so
+  `rounded-full` is a 20px pill on the one-line tray and 90px on the 180px maximum, where the semicircular ends
+  swallow the start and end of every line. The 20px cap equals half the one-line height, so changing that height
+  means changing this number too.
 - The submit button is `size-7` (28px) and floats over the tray at `absolute end-1.5 bottom-1.5`. All three
   gaps are 6px: the vertical ones come from `(40 − 28) / 2`, and the inset matches so the button is not
   tighter to the right edge than to the top and bottom. Recompute from that formula rather than nudging it by
@@ -109,6 +113,9 @@ The composer is two stacked regions, and the split between them is load-bearing.
 - Send is `arrow-up` and stop is `stop`.
 - Because the button floats over the text, the contenteditable needs `pe-14` to keep the last character clear of it.
   Removing that padding puts text under the button as soon as a line fills.
+- The scroll thumb is offset with `inset-inline-end: 34px` on the composer. It rides the right edge by default,
+  which is where the send button floats, and the two overlapped by the button's inset. The number is `28 + 6`:
+  the button's width plus its inset, so it moves with either.
 - The actions row needs `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
   positioned element without a z-index loses to any element that has one. Without the higher stack the tray swallows
   every click meant for the actions: the button looks fine, `elementFromPoint` at its centre returns the editor, and
