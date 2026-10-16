@@ -19,6 +19,8 @@ export function Composer(props: {
   borderUnderlay?: boolean
   readOnly?: boolean
   suggestionBoundary?: () => HTMLElement | undefined
+  /** Rendered in the bar before the model control; the caller decides what belongs there. */
+  barSlot?: JSX.Element
 }) {
   const dialog = useDialog()
   const command = useCommand()
@@ -27,9 +29,11 @@ export function Composer(props: {
   // Reasoning effort is per model, so it only makes sense next to the model picker rather than
   // on the bar, where it read as a second global mode.
   const variant = () => props.model.model.selection.variant
+
   const variantOptions = createMemo(() =>
     ["default", ...variant().list()].map((value) => ({ id: value, label: value })),
   )
+
   const variantCurrent = () => variant().current() ?? "default"
 
   return (
@@ -40,6 +44,7 @@ export function Composer(props: {
         readOnly={props.readOnly}
         class={props.class}
         modelControlsVisible={!props.model.model.loading}
+        barSlot={props.barSlot}
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
         alternateKeybind={[formatKeybind("mod", language.t), "↵"]}

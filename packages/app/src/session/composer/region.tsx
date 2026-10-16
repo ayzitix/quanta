@@ -22,6 +22,8 @@ import { requireServerKey, sessionHref } from "@/shell/routes/session"
 import { useComposerCommands } from "@/composer/commands"
 import { useSessionCommands } from "../commands/use-session-commands"
 import type { SessionModel } from "../model"
+import type { MountedSession, SessionScreen } from "@opencode/gui-extensions/sdk"
+import { ExtensionSlot } from "@/runtime/extension/render"
 import type { SessionScreenLayout } from "../screen-layout"
 import { syncPromptModel } from "../session-model-helpers"
 import type { SessionTimelineInteraction } from "../timeline/interaction"
@@ -293,6 +295,9 @@ export function ActiveSessionComposerRegion(props: {
   session: SessionModel
   model: SessionComposerController
   suggestionBoundary: () => HTMLElement | undefined
+  /** The routed session and its screen, for the extension slot the composer's bar renders. */
+  view: Accessor<MountedSession>
+  screen: SessionScreen
 }) {
   const location = useWorkspaceLocation()
 
@@ -322,6 +327,19 @@ export function ActiveSessionComposerRegion(props: {
                   borderUnderlay
                   readOnly={props.model.queue.undoing()}
                   suggestionBoundary={props.suggestionBoundary}
+                  barSlot={
+                    <ExtensionSlot
+                      at="session.composer.bar"
+                      input={{
+                        get session() {
+                          return props.view()
+                        },
+                        get screen() {
+                          return props.screen
+                        },
+                      }}
+                    />
+                  }
                 />
               </div>
             </div>

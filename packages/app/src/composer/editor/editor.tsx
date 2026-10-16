@@ -83,6 +83,8 @@ export type ComposerEditorProps = {
   borderUnderlay?: boolean
   class?: string
   modelControl?: JSX.Element
+  /** Sits before the model control. The caller owns it, so this editor stays free of session state. */
+  barSlot?: JSX.Element
   modelControlsVisible?: boolean
   attachKeybind?: string[]
   attachShortcut?: string
@@ -392,8 +394,9 @@ export function ComposerEditor(props: ComposerEditorProps) {
             </Show>
             {/* ms-auto rather than justify-end on the row: that would push the agent along with the
                 model, and the agent belongs on the left while only the model sits right. */}
-            <div class="ms-auto flex shrink-0 items-center">
+            <div class="ms-auto flex shrink-0 items-center gap-1">
               <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
+              {props.barSlot}
             </div>
           </div>
         </div>

@@ -19,6 +19,8 @@ function ContextTooltipRow(props: { name: JSX.Element; value: JSX.Element }) {
 export function SessionContextUsage(props: {
   session: MountedSession
   variant?: "button" | "indicator"
+  /** The button without its figures, for a row that already spells out the numbers elsewhere. */
+  iconOnly?: boolean
   placement?: ComponentProps<typeof Tooltip>["placement"]
 }) {
   const ctx = useExtension()
@@ -109,7 +111,24 @@ export function SessionContextUsage(props: {
 
   const compactCircle = () => (
     <div class="flex items-center justify-center">
-      <ProgressCircle appearance="compact" size={16} percentage={context()?.usage ?? 0} />
+      {/* Beside the model chip this ring is an icon, not a readout. The indicator appearance is used for its
+          override hooks: compact pins both strokes to fixed tokens, so dimming the whole element would also dim
+          the fill the user needs to read. A faint track with a solid arc keeps the widget quiet and the level
+          legible at the same time. */}
+      <ProgressCircle
+        appearance={props.iconOnly ? "indicator" : "compact"}
+        size={props.iconOnly ? 14 : 16}
+        strokeWidth={props.iconOnly ? 2 : undefined}
+        percentage={context()?.usage ?? 0}
+        style={
+          props.iconOnly
+            ? {
+                "--progress-circle-background": "var(--v2-background-bg-layer-04)",
+                "--progress-circle-progress": "var(--v2-text-text-base)",
+              }
+            : undefined
+        }
+      />
     </div>
   )
 
@@ -142,13 +161,19 @@ export function SessionContextUsage(props: {
               aria-label={ctx.t("usage.toggle")}
             >
               <span class="flex items-center gap-2 whitespace-nowrap group-active:text-v2-text-text-muted">
-                {compactCircle()}
-                <span>{tokens()}</span>
-                <Show when={showCost()}>
-                  <span aria-hidden="true" class="flex w-1.5 shrink-0 items-center justify-center">
-                    ·
-                  </span>
-                  <span>{cost()}</span>
+                {/* Half opacity over an indicator-appearance ring. The two steps below are close (track #666, arc #fcfcfc),
+                so dimming the whole element is what keeps the widget quiet, while the arc still reads about
+                two and a half times brighter than its own track. Applied to the wrapper so the figures variant,
+                which draws no ring, keeps its full strength. */}
+                <span class={props.iconOnly ? "opacity-50" : undefined}>{compactCircle()}</span>
+                <Show when={!props.iconOnly}>
+                  <span>{tokens()}</span>
+                  <Show when={showCost()}>
+                    <span aria-hidden="true" class="flex w-1.5 shrink-0 items-center justify-center">
+                      ·
+                    </span>
+                    <span>{cost()}</span>
+                  </Show>
                 </Show>
               </span>
             </Button>

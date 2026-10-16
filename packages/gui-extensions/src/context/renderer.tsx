@@ -28,9 +28,9 @@ const setup: Setup<typeof definition> = (ctx) => {
   }
 
   ctx.add(Slot, {
-    at: "session.header",
+    at: "session.composer.bar",
     order: 10,
-    render: (input) => <SessionContextUsage session={input.session} placement="bottom" />,
+    render: (input) => <SessionContextUsage session={input.session} iconOnly placement="bottom" />,
   })
 
   ctx.add(
