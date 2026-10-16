@@ -44,6 +44,28 @@ export function Composer(props: {
         class={props.class}
         modelControlsVisible={!props.model.model.loading}
         barSlot={props.barSlot}
+        afterModel={
+          // Reasoning effort is per model, so it reads next to the model it applies to rather than hidden
+          // inside that model's popover, where it was two clicks deep for a setting people change often.
+          <Show when={variantOptions().length > 1}>
+            <div class="flex items-center gap-1" role="group" aria-label={language.t("ui.promptInput.chooseVariant")}>
+              <For each={variantOptions()}>
+                {(option) => (
+                  <button
+                    type="button"
+                    class="h-7 min-w-0 truncate rounded-md px-2 text-[13px] font-[440] leading-5 text-v2-text-text-faint transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none"
+                    classList={{
+                      "bg-v2-overlay-simple-overlay-hover text-v2-text-text-base": variantCurrent() === option.id,
+                    }}
+                    onClick={() => variant().set(option.id === "default" ? undefined : option.id)}
+                  >
+                    {option.label}
+                  </button>
+                )}
+              </For>
+            </div>
+          </Show>
+        }
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
         alternateKeybind={[formatKeybind("mod", language.t), "↵"]}
@@ -57,30 +79,6 @@ export function Composer(props: {
             keybind={command.keybindParts("model.choose")}
             model={props.model.model.selection}
             modelName={props.model.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
-            footer={
-              <Show when={variantOptions().length > 1}>
-                <div
-                  class="flex items-center gap-1 px-1.5 py-1"
-                  role="group"
-                  aria-label={language.t("ui.promptInput.chooseVariant")}
-                >
-                  <For each={variantOptions()}>
-                    {(option) => (
-                      <button
-                        type="button"
-                        class="h-6 min-w-0 flex-1 truncate rounded-sm px-2 text-[13px] font-[440] leading-5 tracking-[-0.04px] text-v2-text-text-faint transition-colors hover:bg-v2-overlay-simple-overlay-hover hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:text-v2-text-text-base focus-visible:outline-none"
-                        classList={{
-                          "bg-v2-overlay-simple-overlay-hover! text-v2-text-text-base!": variantCurrent() === option.id,
-                        }}
-                        onClick={() => variant().set(option.id === "default" ? undefined : option.id)}
-                      >
-                        {option.label}
-                      </button>
-                    )}
-                  </For>
-                </div>
-              </Show>
-            }
             onClose={props.model.restoreFocus}
             onUnpaidClick={() => dialog.show(() => <DialogSelectModelUnpaid model={props.model.model.selection} />)}
           />
@@ -97,7 +95,6 @@ function ComposerModelControl(props: {
   keybind: string[]
   model: ComposerModel["model"]["selection"]
   modelName: string
-  footer?: JSX.Element
   onClose: () => void
   onUnpaidClick: () => void
 }) {
@@ -148,7 +145,6 @@ function ComposerModelControl(props: {
           <ModelSelectorPopover
             model={props.model}
             unpaid={!props.paid}
-            footer={props.footer}
             trigger={(triggerProps) => (
               <Button
                 {...triggerProps}
