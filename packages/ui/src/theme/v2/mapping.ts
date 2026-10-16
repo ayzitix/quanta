@@ -140,7 +140,7 @@ const dark: Record<string, V2ColorValue> = {
   "v2-state-fg-warning": ref("v2-yellow-500"),
   "v2-state-border-warning": ref("v2-yellow-900"),
   "v2-state-bg-danger": ref("v2-red-1200"),
-  "v2-state-fg-danger": ref("v2-red-500"),
+  "v2-state-fg-danger": ref("v2-red-600"),
   "v2-state-border-danger": ref("v2-red-900"),
   "v2-state-bg-info": ref("v2-blue-1200"),
   "v2-state-fg-info": ref("v2-blue-500"),

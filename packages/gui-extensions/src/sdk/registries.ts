@@ -569,6 +569,16 @@ export interface SlotMap {
     /** The routed session; a new object when another session is routed. */
     readonly session: MountedSession
   }
+  /**
+   * The row under the session's composer, at its trailing end beside the model control. Mounted with the
+   * composer, so it is absent while the composer is unmounted and never on a screen without a session.
+   */
+  readonly "session.composer.bar": {
+    /** The owning session screen; always present. */
+    readonly screen: SessionScreen
+    /** The routed session; a new object when another session is routed. */
+    readonly session: MountedSession
+  }
 }
 
 /** Content for one of the host's slots, typed by `at`. */

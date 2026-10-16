@@ -1,10 +1,9 @@
-import { Show, createMemo } from "solid-js"
+import { Show, createMemo, type JSX } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { Keybind } from "@opencode/ui/keybind"
-import { ProviderModelIcon } from "@/providers/models/provider-group"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { ComposerEditor } from "./editor/editor"
 import { ModelSelectorPopover } from "@/providers/models/select-dialog"
@@ -19,6 +18,8 @@ export function Composer(props: {
   borderUnderlay?: boolean
   readOnly?: boolean
   suggestionBoundary?: () => HTMLElement | undefined
+  /** Rendered in the bar before the model control; the caller decides what belongs there. */
+  barSlot?: JSX.Element
 }) {
   const dialog = useDialog()
   const command = useCommand()
@@ -32,6 +33,7 @@ export function Composer(props: {
         readOnly={props.readOnly}
         class={props.class}
         modelControlsVisible={!props.model.model.loading}
+        barSlot={props.barSlot}
         attachKeybind={command.keybindParts("file.attach")}
         attachShortcut={command.keybind("file.attach")}
         alternateKeybind={[formatKeybind("mod", language.t), "↵"]}
@@ -44,7 +46,6 @@ export function Composer(props: {
             title={language.t("command.model.choose")}
             keybind={command.keybindParts("model.choose")}
             model={props.model.model.selection}
-            provider={props.model.model.selection.current()?.provider}
             modelName={props.model.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
             onClose={props.model.restoreFocus}
             onUnpaidClick={() => dialog.show(() => <DialogSelectModelUnpaid model={props.model.model.selection} />)}
@@ -61,7 +62,6 @@ function ComposerModelControl(props: {
   title: string
   keybind: string[]
   model: ComposerModel["model"]["selection"]
-  provider?: { id: string; canonical?: string; name: string }
   modelName: string
   onClose: () => void
   onUnpaidClick: () => void
@@ -71,16 +71,10 @@ function ComposerModelControl(props: {
 
   const content = () => (
     <>
-      <Show when={props.provider}>
-        {(provider) => (
-          <ProviderModelIcon
-            provider={provider()}
-            class="shrink-0 opacity-40 transition-opacity duration-150 group-hover:opacity-100"
-          />
-        )}
-      </Show>
+      {/* No provider mark on the chip: it rides inside the text tray where the name alone reads cleanly. The
+          mark belongs beside each name inside the selector, which already carries it per provider group. */}
       <span class="truncate leading-4">{props.modelName}</span>
-      <span class="-ml-0.5 -mr-1 flex shrink-0">
+      <span class="-ms-0.5 -me-1 flex shrink-0">
         <Icon name="chevron-down" />
       </span>
     </>
@@ -106,10 +100,11 @@ function ComposerModelControl(props: {
               data-action="composer-model"
               data-control-type="dialog"
               variant="ghost-muted"
-              size="normal"
-              class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
+              size="small"
+              // The chip sits in the tray with everything else rounded, and `small` pins a 4px radius at
+              // higher specificity than a plain utility would carry, so the override has to be important.
+              class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
               classList={{ "animate-in fade-in": shouldAnimate() }}
-              style={{ height: "28px" }}
               onClick={props.onUnpaidClick}
             >
               {content()}
@@ -123,9 +118,8 @@ function ComposerModelControl(props: {
               <Button
                 {...triggerProps}
                 variant="ghost-muted"
-                size="normal"
-                style={{ height: "28px" }}
-                class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
+                size="small"
+                class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"
                 data-control-type={mobile() ? "drawer" : "popover"}

@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron"
+import { BrowserWindow } from "electron"
 import { Effect } from "effect"
 import { ExtensionRpcs } from "../../shared/ipc-rpc"
 import { ExtensionError, extensionFailure } from "../extension/error"
@@ -7,6 +7,7 @@ import { Extensions } from "../extension"
 import { IpcPortHandoff } from "../ipc-transport"
 import { isRendererUrl } from "../windows/scheme"
 import { sender, type RpcContext } from "./context"
+import { PACKAGED } from "../constants"
 
 export const extensionHandlers = ExtensionRpcs.toLayer(
   Effect.gen(function* () {
@@ -29,7 +30,7 @@ export const extensionHandlers = ExtensionRpcs.toLayer(
     const manage = <A>(run: (host: ExtensionHost) => A | Promise<A>) =>
       Effect.tryPromise({
         try: () => {
-          if (app.isPackaged) throw new ExtensionError("unavailable")
+          if (PACKAGED) throw new ExtensionError("unavailable")
 
           return extensions.host().then(run)
         },

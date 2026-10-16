@@ -35,16 +35,16 @@ Unit tests of logic that carries a contract sit beside the code as `*.test.ts`, 
 
 `Extension.define` is the manifest. The host reads it before any entry loads.
 
-| Field      | What it declares                                                              | In the context                                    |
-| ---------- | ----------------------------------------------------------------------------- | ------------------------------------------------- |
-| `id`       | Prefix of every id: commands, panel keys, stored keys, contract and Ipc ids   | `ctx.id`                                          |
+| Field      | What it declares                                                                   | In the context                                    |
+| ---------- | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `id`       | Prefix of every id: commands, panel keys, stored keys, contract and Ipc ids        | `ctx.id`                                          |
 | `legacy`   | Earlier extension ids, newest first; preserves desktop enable state after a rename |                                                   |
-| `os`       | The operating systems it runs on; omit it to run everywhere, the web included |                                                   |
-| `provides` | Contracts from the window entry, Ipcs from the main entry                     | `ctx.provide(token, impl)`, and `ctx.uses.name()` |
-| `uses`     | Optional dependencies other extensions provide; it works while one is missing | `ctx.uses.name()` is `Live<T>`                    |
-| `requires` | Hard dependencies; setup runs only while all are active                       | `ctx.requires.name` is `T`                        |
-| `stores`   | State the host stores: window stores load before they are read, main's always | `ctx.stores.name`, each process its own           |
-| `i18n`     | The extension's copy                                                          | `ctx.t`, `ctx.plural`                             |
+| `os`       | The operating systems it runs on; omit it to run everywhere, the web included      |                                                   |
+| `provides` | Contracts from the window entry, Ipcs from the main entry                          | `ctx.provide(token, impl)`, and `ctx.uses.name()` |
+| `uses`     | Optional dependencies other extensions provide; it works while one is missing      | `ctx.uses.name()` is `Live<T>`                    |
+| `requires` | Hard dependencies; setup runs only while all are active                            | `ctx.requires.name` is `T`                        |
+| `stores`   | State the host stores: window stores load before they are read, main's always      | `ctx.stores.name`, each process its own           |
+| `i18n`     | The extension's copy                                                               | `ctx.t`, `ctx.plural`                             |
 
 - [`src/renderer.ts`](src/renderer.ts) and [`src/main.ts`](src/main.ts) list the built-ins, each through `Extension.compose`. These are the only files that name extensions.
 - Another extension imports only your `contract.ts`.
@@ -213,18 +213,18 @@ SDK icon fields use `IconName` from `@opencode/ui/icons/catalog`, a dependency-f
 
 ### Registries
 
-| Registry                                | Process | What an item is                                                                             |
-| --------------------------------------- | ------- | ------------------------------------------------------------------------------------------- |
-| [`Command`](src/sdk/registries.ts)      | window  | A palette command with an optional keybind and slash command                                |
-| [`MenuItem`](src/sdk/registries.ts)     | window  | An item of a host menu: the side panel + menu, Add server, a server row                     |
-| [`Panel`](src/sdk/registries.ts)        | window  | Tabs in the session's side region, or the dock                                              |
-| [`SettingsPage`](src/sdk/registries.ts) | window  | A settings page, a section on a host page, or rows in a host section                        |
-| [`Server`](src/sdk/registries.ts)       | window  | A source of servers, such as SSH hosts                                                      |
-| [`LinkHandler`](src/sdk/registries.ts)  | window  | Opens local links, such as file paths in messages, and says whether their target exists     |
-| [`TitlebarItem`](src/sdk/registries.ts) | window  | A titlebar pill, or the dev channel badge as a toggle                                       |
-| [`Slot`](src/sdk/registries.ts)         | window  | Content for `window.bottom`, `session.header`, `session.panel.end`, `session.panel.sidebar` |
-| [`Style`](src/sdk/registries.ts)        | window  | CSS imported with `?inline`                                                                 |
-| [`MenubarItem`](src/sdk/main.ts)        | main    | An item of the native app menu                                                              |
+| Registry                                | Process | What an item is                                                                                                     |
+| --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| [`Command`](src/sdk/registries.ts)      | window  | A palette command with an optional keybind and slash command                                                        |
+| [`MenuItem`](src/sdk/registries.ts)     | window  | An item of a host menu: the side panel + menu, Add server, a server row                                             |
+| [`Panel`](src/sdk/registries.ts)        | window  | Tabs in the session's side region, or the dock                                                                      |
+| [`SettingsPage`](src/sdk/registries.ts) | window  | A settings page, a section on a host page, or rows in a host section                                                |
+| [`Server`](src/sdk/registries.ts)       | window  | A source of servers, such as SSH hosts                                                                              |
+| [`LinkHandler`](src/sdk/registries.ts)  | window  | Opens local links, such as file paths in messages, and says whether their target exists                             |
+| [`TitlebarItem`](src/sdk/registries.ts) | window  | A titlebar pill, or the dev channel badge as a toggle                                                               |
+| [`Slot`](src/sdk/registries.ts)         | window  | Content for `window.bottom`, `session.header`, `session.panel.end`, `session.panel.sidebar`, `session.composer.bar` |
+| [`Style`](src/sdk/registries.ts)        | window  | CSS imported with `?inline`                                                                                         |
+| [`MenubarItem`](src/sdk/main.ts)        | main    | An item of the native app menu                                                                                      |
 
 ### Host APIs
 

@@ -4,7 +4,7 @@ import log from "electron-log/main.js"
 import { app, crashReporter, netLog, shell } from "electron"
 import { Context, Effect, FileSystem, Layer, Logger, Option, Path, References, Stream } from "effect"
 import { homedir } from "node:os"
-import { VERSION } from "../constants"
+import { PACKAGED, VERSION } from "../constants"
 import { marks } from "../lifecycle/marks"
 
 const MAX_LOG_AGE_DAYS = 7
@@ -42,7 +42,7 @@ const serviceLayer = Layer.effect(
     marks.logging = Date.now()
     yield* Effect.logInfo("app starting", {
       version: VERSION,
-      packaged: app.isPackaged,
+      packaged: PACKAGED,
       onboardingTest: process.env.OPENCODE_TEST_ONBOARDING === "1",
       marks,
     })
@@ -241,7 +241,7 @@ function manifest(path: Path.Path) {
     generated: new Date().toISOString(),
     version: VERSION,
     name: app.getName(),
-    packaged: app.isPackaged,
+    packaged: PACKAGED,
     platform: process.platform,
     arch: process.arch,
     versions: process.versions,
@@ -316,7 +316,7 @@ function writeZip(fs: FileSystem.FileSystem, output: string, entries: Entry[]) {
 }
 
 function initConsoleTransport() {
-  if (app.isPackaged) {
+  if (PACKAGED) {
     log.transports.console.level = false
 
     return

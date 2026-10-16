@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron"
+import { BrowserWindow } from "electron"
 import { builtins } from "@opencode/gui-extensions/main"
 import type { BridgeLayout, BridgeMenubarItem } from "@opencode/gui-extensions/sdk/bridge"
 import {
@@ -37,7 +37,7 @@ import {
   ExtensionsChanged,
   type DesktopEvent,
 } from "../../shared/ipc-rpc/events"
-import { CHANNEL, VERSION } from "../constants"
+import { CHANNEL, PACKAGED, VERSION } from "../constants"
 import { emitIpcEvent } from "../ipc-events"
 import { refreshMenu, setMenubarProvider } from "../native/menu"
 import {
@@ -257,7 +257,7 @@ export function createHost(input: {
     }
   }
 
-  const build = { version: VERSION, channel: CHANNEL, platform: "desktop", packaged: app.isPackaged } satisfies Build
+  const build = { version: VERSION, channel: CHANNEL, platform: "desktop", packaged: PACKAGED } satisfies Build
 
   const serverEndpoints = { get: server } satisfies ServerEndpoints
 

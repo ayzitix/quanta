@@ -6,6 +6,7 @@ import { promisify } from "node:util"
 import { app } from "electron"
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from "effect"
 import installer from "../../../../../install?raw"
+import { PACKAGED } from "../constants"
 import { DesktopPaths } from "../paths"
 import { BUNDLED_CLI_VERSION_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
@@ -51,7 +52,7 @@ export const layer = Layer.effect(
 )
 
 const make = Effect.fn("DesktopCli.resolve")(function* () {
-  const development = !app.isPackaged && process.env.OPENCODE_DESKTOP_CLI_DEV
+  const development = !PACKAGED && process.env.OPENCODE_DESKTOP_CLI_DEV
   const version = process.env.OPENCODE_VERSION ?? "local"
 
   const cli = development
@@ -69,7 +70,7 @@ const make = Effect.fn("DesktopCli.resolve")(function* () {
         ],
         binary: undefined,
       }
-    : yield* resolveBundledCli(!app.isPackaged && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1")
+    : yield* resolveBundledCli(!PACKAGED && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1")
 
   return cli satisfies Resolved
 })
@@ -78,13 +79,13 @@ const resolveBundledCli = Effect.fn("DesktopCli.resolveBundled")(function* (isol
   const path = yield* Path.Path
   const paths = yield* DesktopPaths.resolve
 
-  const bundled = app.isPackaged
+  const bundled = PACKAGED
     ? path.join(process.resourcesPath, executableName())
     : path.join(paths.developmentResourcesRoot, isolated ? developmentExecutableName() : executableName())
 
-  yield* Effect.logInfo("v2 CLI executable resolved", { bundled, packaged: app.isPackaged })
+  yield* Effect.logInfo("v2 CLI executable resolved", { bundled, packaged: PACKAGED })
   const version = yield* bundledVersion(bundled)
-  const binary = app.isPackaged || isolated ? yield* installCli(bundled, version) : bundled
+  const binary = PACKAGED || isolated ? yield* installCli(bundled, version) : bundled
 
   return { version, binary, command: [binary] }
 })

@@ -11,6 +11,7 @@ import { registerRendererProtocol } from "./protocol"
 import { loadWindow } from "./scheme"
 import { allowRendererPermissions, wireNavigationPolicy, wireRendererHeaders } from "./security"
 import { manageWindowState, readWindowState, resolveWindowState, windowStateFile, type WindowState } from "./window-state"
+import { PACKAGED } from "../constants"
 
 export type EarlyWindow = {
   id: string
@@ -39,7 +40,7 @@ export function createEarlyWindow() {
   const root = path.dirname(fileURLToPath(import.meta.url))
   const file = path.join(app.getPath("userData"), windowStateFile(id))
   const state = resolveWindowState(readWindowState(file), { width: 1280, height: 800 }, displays)
-  const icons = app.isPackaged ? path.join(process.resourcesPath, "icons") : path.join(root, "../../resources/icons")
+  const icons = PACKAGED ? path.join(process.resourcesPath, "icons") : path.join(root, "../../resources/icons")
 
   const win = new BrowserWindow({
     x: state.x,
@@ -48,7 +49,7 @@ export function createEarlyWindow() {
     height: state.height,
     show: true,
     autoHideMenuBar: true,
-    title: "OpenCode",
+    title: "Quanta",
     icon: path.join(icons, `icon.${process.platform === "win32" ? "ico" : "png"}`),
     backgroundColor: storedBackgroundColor(),
     ...(process.platform === "darwin" ? { titleBarStyle: "hidden" as const, trafficLightPosition: { x: 14, y: 14 } } : {}),

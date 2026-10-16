@@ -4,7 +4,7 @@ import { enableCompileCache } from "node:module"
 import { homedir, tmpdir } from "node:os"
 import path from "node:path"
 import { app } from "electron"
-import { APP_ID, APP_NAME } from "../constants"
+import { APP_ID, APP_NAME, PACKAGED } from "../constants"
 
 const testOnboarding = process.env.OPENCODE_TEST_ONBOARDING === "1"
 
@@ -26,7 +26,7 @@ export function configureApplication() {
   const features = app.commandLine.getSwitchValue("enable-features")
   app.commandLine.appendSwitch("enable-features", features ? `${jsCallStackFeature},${features}` : jsCallStackFeature)
 
-  if (!app.isPackaged)
+  if (!PACKAGED)
     app.commandLine.appendSwitch("remote-debugging-port", process.env.OPENCODE_DESKTOP_REMOTE_DEBUGGING_PORT ?? "9222")
 
   const testRoot = createTestRoot()
@@ -52,7 +52,7 @@ export function acquireApplicationLock() {
 function createTestRoot() {
   const root = testOnboarding
     ? path.join(tmpdir(), `opencode-onboarding-${randomUUID()}`)
-    : app.isPackaged
+    : PACKAGED
       ? undefined
       : process.env.OPENCODE_DESKTOP_TEST_ROOT
 
