@@ -137,17 +137,44 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - Send and stop keep their colour in mutually exclusive `classList` keys, not a base colour the stop state
   overrules: two `bg-*` utilities in one cascade resolve by stylesheet order, not by intent. The tray has no
   variant of its own — `variant="submit"` would repaint it with `--v2-elevation-button-contrast`.
-- The bar's trailing group is model, then the thinking-power chip, then `barSlot`, right-aligned with `ms-auto` on
-  the group rather than `justify-end` on the row, which would drag the agent along with it. `barSlot` is a prop, not
-  state: the generic composer renders whatever the caller passes and knows nothing about sessions.
-- Thinking power is `view.variant` rendered by the editor itself, right after the model control: a
-  `ComposerEditorConfiguredSelect`, gated on `options().length > 1`, keybind `Shift+Mod+D`. It is not a popover
-  footer and not a segmented group. The editor reads it off `props.controller.view`, so `composer/model.ts` stays the
-  only owner of model state and `composer/composer.tsx` needs no variant code at all.
+- The model rides inside the **text tray**, in `composer-actions` before the submit button, not in the bar. It
+  names what the prompt is about to run on, so it reads as the sentence's own furniture; the bar below is the
+  instrument cluster — readouts, not inputs. Keep it at `size="small"` (24px) so it matches the submit
+  button it sits beside, and remember the text carries `pe-11` (44px) for that button, so a long line can run
+  under the chip.
+- The bar is two trays, not one row: `composer-controls-tray` holds the thinking-power chip,
+  `composer-bar-slot-tray` holds whatever `barSlot` carries. Both are the text tray's twins — `bg-base`, a 1px
+  `::before` rim in `--v2-border-border-muted`, `rounded-full` — so the controls read as part of the same
+  system. The slot tray is `size-7` (28px square) so its radius is a true circle; the controls tray is `h-7` with
+  `px-1`. `ms-auto` sits on the group around both trays, not on the row, for the reason below.
+- `justify-end` on the controls row would drag the agent along, so the trailing group uses `ms-auto`. `barSlot`
+  is a prop, not state: the generic composer renders whatever the caller passes and knows nothing about sessions.
+- Chips inside the trays take the tray's radius from `editor.css`, not from their own variant. Every button
+  variant carries a small radius, which reads as a square block pasted into a round tray the moment it takes
+  the hover fill. The rule is unlayered for the same reason the glint is.
+- Colour on these controls cannot come from Tailwind classes. `icon-button.css` and `button.css` set
+  `background-color` and `color` on the button itself at (0,2,0), which outranks every colour utility at (0,1,0)
+  — a class on the trigger silently does nothing and the control stays transparent. `editor.css` owns those
+  colours at (0,4,0) instead, and excludes the open state so the inverse rule still owns it.
+- The model chip carries a caret; the thinking chip does not. One caret per control reads as a disclosure, two
+  side by side double the punctuation between marks that already sit shoulder to shoulder.
+- Thinking power is `view.variant` rendered by the editor itself: a `ComposerEditorConfiguredSelect` gated on
+  `options().length > 1`, keybind `Shift+Mod+D`. It is not a popover footer and not a segmented group. The
+  editor reads it off `props.controller.view`, so `composer/model.ts` stays the only owner of model state and
+  `composer/composer.tsx` needs no variant code at all.
+- Its trigger draws a gauge instead of the word: `ComposerThinkingGauge` copies `ProgressCircle`'s own numbers
+  for the context icon — viewBox 16, r 7, a 2px stroke, `--v2-background-bg-layer-04` for the dimmed track —
+  so the two round marks in the bar are the same mark at different jobs. `default` parks mid-scale with no arc,
+  never below `none`, which is explicitly no thinking. Opened, it shows `ComposerEffortPanel`: stops are every
+  option with `default` at the recommended one, and the dot drift speeds up with the level.
 - The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
   exposes, so extra fade is an opacity modifier, not a second token.
 - The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where
   the mark belongs; on the chip it was noise beside a name that already reads.
+- The add button's glyph is drawn in `editor.tsx`, not taken from the icon catalog. Catalog bodies carry no
+  `stroke-width`, so they render at the SVG default of one unit — a hairline at these sizes that antialiases
+  into a smear. Give a hand-drawn glyph an explicit weight, and give the svg `data-slot="icon-svg"` so the 45°
+  cross rule still finds it.
 
 ### Extension content in the composer
 

@@ -71,10 +71,10 @@ function ComposerModelControl(props: {
 
   const content = () => (
     <>
-      {/* No provider mark on the chip: it sits under the tray where the name alone reads cleanly. The mark
-          belongs beside each name inside the selector, which already carries it per provider group. */}
+      {/* No provider mark on the chip: it rides inside the text tray where the name alone reads cleanly. The
+          mark belongs beside each name inside the selector, which already carries it per provider group. */}
       <span class="truncate leading-4">{props.modelName}</span>
-      <span class="-ml-0.5 -mr-1 flex shrink-0">
+      <span class="-ms-0.5 -me-1 flex shrink-0">
         <Icon name="chevron-down" />
       </span>
     </>
@@ -100,10 +100,11 @@ function ComposerModelControl(props: {
               data-action="composer-model"
               data-control-type="dialog"
               variant="ghost-muted"
-              size="normal"
-              class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
+              size="small"
+              // The chip sits in the tray with everything else rounded, and `small` pins a 4px radius at
+              // higher specificity than a plain utility would carry, so the override has to be important.
+              class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
               classList={{ "animate-in fade-in": shouldAnimate() }}
-              style={{ height: "28px" }}
               onClick={props.onUnpaidClick}
             >
               {content()}
@@ -117,9 +118,8 @@ function ComposerModelControl(props: {
               <Button
                 {...triggerProps}
                 variant="ghost-muted"
-                size="normal"
-                style={{ height: "28px" }}
-                class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
+                size="small"
+                class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"
                 data-control-type={mobile() ? "drawer" : "popover"}

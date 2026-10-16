@@ -55,10 +55,133 @@
   pointer-events: none;
 }
 
+/* The controls' tray is the text tray's twin: the same fill and the same 1px hairline, so the row of model,
+   thinking power and context reads as one system rather than a second, weaker field. It repeats the rule
+   above instead of sharing a selector because the composer form also carries [data-dock-border-underlay]
+   and the focus glint, neither of which belongs on a control tray. Both trays share one definition: they are
+   the same object at two widths, and two copies of a hairline are two numbers to keep in step. */
+[data-slot="composer-controls-tray"],
+[data-slot="composer-bar-slot-tray"] {
+  position: relative;
+}
+
+[data-slot="composer-controls-tray"]::before,
+[data-slot="composer-bar-slot-tray"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* The chips take their tray's radius and sit inset inside it, so a hover fill reads as a chip inside the
+   tray rather than as the tray itself changing. Each button variant carries a small radius, which pastes a
+   square block into a round tray the moment it fills, and its own height, which would run the fill into the
+   tray's rim. The rule is unlayered for the reason the glint is: a layered rule loses to the Tailwind
+   utility and to the inline height it replaces. */
+[data-slot="composer-controls-tray"] button {
+  height: 24px;
+  border-radius: 9999px;
+}
+
+[data-slot="composer-bar-slot-tray"] button {
+  border-radius: 9999px;
+}
+
+/* An icon-only chip is a 24px square, so its hover fill is a circle. Width, padding and centring live here
+   rather than in utilities because the trigger's own variant carries padding, and two same-specificity
+   utilities would resolve by stylesheet order instead of by intent. */
+[data-slot="composer-controls-tray"] .composer-round-trigger {
+  width: 24px;
+  padding-inline: 0;
+  justify-content: center;
+}
+
+/* The effort popover is flat: the tray and the panel already carry their own hairlines and fills, so the
+   floating shadow the menu content brings would lift the instrument off the page. Scoped to this popover
+   only — every other menu keeps its elevation. */
+[data-component="menu-v2-content"].composer-effort-popover {
+  box-shadow: none;
+  position: relative;
+}
+
+/* The effort popover's rim is the input tray's rim: the same 1px masked hairline, so the window reads as
+   part of the composer rather than a floating card. It repeats the tray rule instead of sharing a selector
+   because the popover carries no dock underlay and no focus glint. */
+[data-component="menu-v2-content"].composer-effort-popover::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Drifting dots across the effort track, one keyframe paced per dot inline: a dot fades in just past the
+   edge, holds, and fades out before the far edge, so nothing pops at the boundary. */
+@keyframes composer-effort-dot {
+  from {
+    transform: translateX(-8px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  to {
+    transform: translateX(232px);
+    opacity: 0;
+  }
+}
+
+.composer-effort-particle {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--v2-text-text-contrast);
+  opacity: 0;
+  animation-name: composer-effort-dot;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
 /* The add control doubles as the menu's dismiss: 45° turns the plus into a cross, which spares the tray a
    second slot that only exists while the menu is open. Kobalte puts data-expanded on the trigger, so no open
    state has to cross into the component. Unlayered on purpose: the closed colours are Tailwind utilities, and
    a layered rule would lose to them. */
+/* The add button keeps its own fill and glyph colour. `icon-button.css` sets both on the ghost variant at
+   (0,2,0) — `background-color: transparent` and its own `color` — which beats any Tailwind colour utility at
+   (0,1,0), so a class on the trigger silently does nothing and the button stays see-through. This rule is
+   (0,4,0) and excludes the open state, so it outranks every ghost state rule while the [data-expanded] rule
+   below still owns the inverted look. */
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost"]:not([data-expanded]) {
+  background-color: var(--v2-background-bg-layer-02);
+  color: var(--v2-text-text-base);
+}
+
 [data-action="composer-attach"] [data-slot="icon-svg"] {
   transition: transform 180ms ease;
 }
@@ -67,9 +190,24 @@
   transform: rotate(45deg);
 }
 
-[data-action="composer-attach"][data-expanded] {
+/* Open state inverts both: a near-white circle with a near-black cross (grey-100 on grey-1000 in the dark
+   theme). The jump is deliberate — together with the 45° turn it is the clearest "this menu is open" the
+   control has, and the rotation alone was not enough on its own. */
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost"][data-expanded] {
   background-color: var(--v2-background-bg-inverse);
   color: var(--v2-text-text-inverse);
+}
+
+/* The model chip's caret flips while its popover is open — the same disclosure the add button gives with
+   its 45° turn, keyed on the same attribute. `Menu.Trigger` publishes `[data-expanded]`, so a rule written
+   against `aria-expanded` silently never matches; the second selector covers the hand-built drawer
+   trigger, which publishes the ARIA state instead. */
+[data-action="composer-model"] [data-slot="icon-svg"] {
+  transition: transform 180ms ease;
+}
+
+[data-action="composer-model"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"] {
+  transform: rotate(180deg);
 }
 
 /* The vertical scroll thumb rides the right edge, which is exactly where the send button floats, and the

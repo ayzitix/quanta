@@ -334,6 +334,14 @@ export function ComposerEditor(props: ComposerEditorProps) {
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions. */}
         <div data-slot="composer-actions" class="absolute end-2 bottom-2 z-20 flex shrink-0 items-center">
+          {/* The model rides in the tray, not the bar: it names the thing the prompt is about to run on, so
+              it reads as part of the sentence's own furniture the way the reference does. The bar keeps the
+              instrument cluster — thinking gauge and context ring — which are readouts, not inputs. */}
+          <Show when={state.mode === "normal"}>
+            <div class="me-1 flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
+              <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
+            </div>
+          </Show>
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
               controller={props.controller}
@@ -393,23 +401,47 @@ export function ComposerEditor(props: ComposerEditorProps) {
               )}
             </Show>
             {/* ms-auto rather than justify-end on the row: that would push the agent along with the
-                model, and the agent belongs on the left while only the model sits right. */}
-            <div class="ms-auto flex shrink-0 items-center gap-1">
-              <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
-              <Show when={view.variant} keyed>
-                {(control) => (
-                  <Show when={control.options().length > 1}>
-                    <ComposerEditorConfiguredSelect
-                      mobileDrawer
-                      title={i18n.t("ui.promptInput.chooseVariant")}
-                      keybind={["Shift", "Mod", "D"]}
-                      control={control}
-                      class={control.current() === "default" ? "composer-variant-default" : undefined}
-                    />
-                  </Show>
-                )}
+                model, and the agent belongs on the left while only the model sits right. The tray is the
+                controls' own pill, not the text box above it: three marks in a row read as one control
+                group when they share a surface, and gap-0.5 keeps it tight without touching. */}
+            <div class="ms-auto flex h-7 shrink-0 items-center gap-1">
+              <div
+                data-slot="composer-controls-tray"
+                class="flex h-7 shrink-0 items-center gap-0.5 rounded-full bg-v2-background-bg-base px-1"
+              >
+                <Show when={view.variant} keyed>
+                  {(control) => (
+                    <Show when={control.options().length > 1}>
+                      <ComposerEditorConfiguredSelect
+                        mobileDrawer
+                        caret={false}
+                        round
+                        popoverClass="composer-effort-popover"
+                        indicator={<ComposerThinkingGauge options={control.options()} current={control.current()} />}
+                        panel={
+                          <ComposerEffortPanel
+                            options={control.options()}
+                            current={control.current()}
+                            onSelect={control.onSelect}
+                          />
+                        }
+                        title={i18n.t("ui.promptInput.chooseVariant")}
+                        keybind={["Shift", "Mod", "D"]}
+                        control={control}
+                        class={control.current() === "default" ? "composer-variant-default" : undefined}
+                      />
+                    </Show>
+                  )}
+                </Show>
+              </div>
+              <Show when={props.barSlot}>
+                <div
+                  data-slot="composer-bar-slot-tray"
+                  class="flex size-7 shrink-0 items-center justify-center rounded-full bg-v2-background-bg-base"
+                >
+                  {props.barSlot}
+                </div>
               </Show>
-              {props.barSlot}
             </div>
           </div>
         </div>
@@ -788,12 +820,28 @@ export function ComposerEditorAddMenu(props: {
           as={IconButton}
           data-action="composer-attach"
           type="button"
-          icon={<Icon name="plus" />}
+          /* Drawn here instead of taken from the catalog. Catalog bodies carry no stroke-width, so they
+             render at the SVG default of one unit: a hairline in a 16 box at 20px, which antialiases into
+             a smear. These arms are shorter than the catalog's as well, so the glyph sits inside the 24px
+             circle the way a native add control does, and it carries `icon-svg` so the 45° cross rule and
+             its transition still reach it. */
+          icon={
+            <svg
+              data-slot="icon-svg"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+              class="shrink-0"
+            >
+              <path d="M8 4.5v7M4.5 8h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          }
           variant="ghost"
-          size="large"
           disabled={props.disabled}
           aria-label={props.title}
-          class="size-6 rounded-full bg-v2-text-text-faint/55 p-1 text-v2-text-text-inverse"
+          class="size-6 rounded-full"
         />
         <Menu.Portal>
           <Menu.Content
@@ -820,6 +868,299 @@ export function ComposerEditorAddMenu(props: {
   )
 }
 
+/** Non-default option ids in order. "default" is the provider's choice, not a level, so it stays out of
+    every scale built from this list. */
+function thinkingLevelIDs(options: ComposerOption[]) {
+  return options.map((option) => option.id).filter((id) => id !== "default")
+}
+
+/** One cold-to-hot colour for the level, shared by the gauge needle and the effort track fill: neutral
+    faint for default, green through yellow to red bands, dark red for the last level of a real scale. Bands
+    rather than per-index colours, so the order always reads as one progression no matter how many options
+    the model declares. The reds are fixed palette hues, not the danger role: danger resolves pinkish and,
+    like everything dimmed, never reads as red. */
+/** Colours for the levels that name themselves. These couple to the catalog's vocabulary — "high" and "max"
+    are the ids providers use — so anything a model does not name falls through to the bands below. */
+const NAMED_THINKING_TONES: Record<string, string> = {
+  high: "var(--v2-orange-600)",
+  max: "var(--v2-red-900)",
+}
+
+function thinkingTone(options: ComposerOption[], current: string) {
+  const named = NAMED_THINKING_TONES[current]
+  if (named) return named
+  // Yellow, like the middle of the scale. Default parks on the recommended stop, and giving it the neutral
+  // text role there made it read as a weaker state than "none", which carries a real green arc at the floor
+  // of the scale.
+  if (current === "default") return "var(--v2-state-fg-warning)"
+  const ids = thinkingLevelIDs(options)
+  const index = Math.max(0, ids.indexOf(current))
+  // The top of the scale is the one place that gets the loudest red in the palette: red-600 is the only
+  // stop that reads as red on a dark surface, and the step below it is red-700 so the two highest levels
+  // stay distinguishable. Bands rather than per-index colours, so the order always reads as one
+  // progression no matter how many options the model declares.
+  if (ids.length > 2 && index === ids.length - 1) return "var(--v2-red-600)"
+  const level = index / Math.max(1, ids.length - 1)
+  if (level < 0.34) return "var(--v2-state-fg-success)"
+  if (level < 0.67) return "var(--v2-state-fg-warning)"
+  return "var(--v2-red-700)"
+}
+
+/** A dial with a needle at the thinking level. The chip is round and a label like "xhigh" competes with the
+    model name beside it, while a needle reads as a value at a glance and at that size. The menu keeps the
+    words, which is the only place they are worth reading. */
+function ComposerThinkingGauge(props: { options: ComposerOption[]; current: string }) {
+  // "none" is the floor of the scale and "default" is not on it: the provider decides, so the needle parks
+  // mid-scale with no arc — unmarked, but at the recommended position rather than in the gap. Parking it at
+  // the minimum made it read as the weakest state, below an explicit "no thinking", which is backwards.
+  const position = createMemo(() => {
+    if (props.current === "default") return { needle: 0.5, arc: 0 }
+    const ids = thinkingLevelIDs(props.options)
+    const level = Math.max(0, ids.indexOf(props.current)) / Math.max(1, ids.length - 1)
+    return { needle: level, arc: level }
+  })
+  const needle = createMemo(() => {
+    // A dial rather than a speedometer arc: the chip is round and the mark inside it should be too. The
+    // needle sweeps three quarters, from the lower left round the top to the lower right, which leaves the
+    // gap where a real gauge has one and keeps the empty reading pointing down instead of sideways. It is a
+    // tapered quad rather than a stroked line, because a stroke is one width end to end and reads as a stick.
+    // Each edge is offset from the end it belongs to: offsetting both from the hub collapses the tip onto
+    // the axis and leaves a dot.
+    const hub = { x: 8, y: 8 }
+    const angle = (135 + position().needle * 270) * (Math.PI / 180)
+    const tip = { x: hub.x + 5.4 * Math.cos(angle), y: hub.y + 5.4 * Math.sin(angle) }
+    const length = Math.hypot(tip.x - hub.x, tip.y - hub.y) || 1
+    const side = { x: -(tip.y - hub.y) / length, y: (tip.x - hub.x) / length }
+    const at = (base: { x: number; y: number }, offset: number, sign: number) =>
+      `${(base.x + side.x * sign * offset).toFixed(2)} ${(base.y + side.y * sign * offset).toFixed(2)}`
+    return `M${at(hub, 1.25, 1)}L${at(tip, 0.2, 1)}L${at(tip, 0.2, -1)}L${at(hub, 1.25, -1)}Z`
+  })
+  const tone = createMemo(() => thinkingTone(props.options, props.current))
+  // The ring copies ProgressCircle's construction for the context icon one to one: viewBox 16, r 7, a 2px
+  // stroke, the grey track in `--v2-background-bg-layer-04`, the level arc in the option's tone with the
+  // same `circumference * (1 - fraction)` dash math, rotated so the arc starts where the needle starts. The
+  // one difference is the range: the context ring reads 0-100 over the full circle from the top, while the
+  // dial sweeps three quarters from the lower left, which leaves the gap where a real gauge has one.
+  const circumference = 2 * Math.PI * 7
+  // Size copies the context icon exactly — a 14px box — but dimming does not: only the track carries
+  // `opacity-50`, which is the part the two rings share. The arc and the needle stay at full strength, so a
+  // colour reads as itself; dimmed, even red-600 comes out dusty and never reads as red.
+  return (
+    <svg viewBox="0 0 16 16" class="size-3.5 shrink-0" aria-hidden="true">
+      <circle
+        cx="8"
+        cy="8"
+        r="7"
+        fill="none"
+        stroke="var(--v2-background-bg-layer-04)"
+        stroke-width="2"
+        opacity="0.5"
+      />
+      <circle
+        cx="8"
+        cy="8"
+        r="7"
+        fill="none"
+        stroke={tone()}
+        stroke-width="2"
+        stroke-dasharray={circumference.toString()}
+        stroke-dashoffset={(circumference * (1 - 0.75 * position().arc)).toString()}
+        transform="rotate(135 8 8)"
+      />
+      <path d={needle()} fill={tone()} />
+    </svg>
+  )
+}
+
+/** Dot start heights and pace multipliers across the 24px track. Negative delays start each dot mid-flight,
+    so the track never opens empty. The multipliers keep the dots out of lockstep with each other; the
+    absolute pace comes from the level. */
+const EFFORT_PARTICLES = [
+  { top: 3, pace: 0.85, delay: 0 },
+  { top: 7, pace: 1.15, delay: -0.7 },
+  { top: 11, pace: 0.7, delay: -1.1 },
+  { top: 15, pace: 1, delay: -0.3 },
+  { top: 19, pace: 1.25, delay: -1.5 },
+  { top: 9, pace: 0.9, delay: -0.9 },
+  { top: 17, pace: 1.05, delay: -0.5 },
+]
+
+/** An effort slider for the thinking level, in the shape of the mock: a header with the current value, a
+    Faster/Smarter scale, a ticked track with a knob and drifting streaks, and a Recommended caption under
+    the middle stop. Stops are every option in order, so nothing that the radio list offered is lost. The
+    panel stays open while the knob moves — closing on every tick would fight dragging — and Escape or an
+    outside click dismisses it through the menu itself. */
+function ComposerEffortPanel(props: { options: ComposerOption[]; current: string; onSelect: (id: string) => void }) {
+  const i18n = useI18n()
+  // Default is not a level, so it takes the recommended stop rather than the far end: a scale whose order
+  // reads none, low, medium, default, high puts the provider's own choice where it actually belongs, in the
+  // middle, instead of labelling "off" as weaker than "let the provider pick". The levels keep their order
+  // around it.
+  const stops = createMemo(() => {
+    const levels = props.options.filter((option) => option.id !== "default")
+    const fallback = props.options.find((option) => option.id === "default")
+    if (!fallback) return levels
+    const at = Math.min(levels.length, Math.floor((props.options.length - 1) / 2))
+    return [...levels.slice(0, at), fallback, ...levels.slice(at)]
+  })
+  const count = () => stops().length
+  const selected = createMemo(() =>
+    Math.max(
+      0,
+      stops().findIndex((option) => option.id === props.current),
+    ),
+  )
+  const recommended = createMemo(() => Math.floor((count() - 1) / 2))
+  const label = (index: number) => stops()[index]?.label ?? ""
+  // Same scale the gauge needle uses, so the streaks and the colour always agree on what the level is.
+  // Default reads as mid-scale there, so it drifts at mid pace rather than at the floor.
+  const level = createMemo(() => {
+    const ids = thinkingLevelIDs(props.options)
+    if (props.current === "default") return 0.5
+    if (ids.length < 2) return 0
+    return Math.max(0, ids.indexOf(props.current)) / (ids.length - 1)
+  })
+  // Half the knob width on each side: the knob travels flush from edge to edge, and pointer math uses the
+  // same insets so a press lands exactly where the knob would sit.
+  const INSET = 7
+  const fraction = (index: number) => (count() <= 1 ? 0 : index / (count() - 1))
+  const at = (clientX: number, track: HTMLElement) => {
+    const rect = track.getBoundingClientRect()
+    const f = Math.min(1, Math.max(0, (clientX - rect.left - INSET) / (rect.width - INSET * 2)))
+    return Math.round(f * (count() - 1))
+  }
+  const [dragging, setDragging] = createSignal(false)
+  const step = (delta: number) => {
+    const next = Math.min(count() - 1, Math.max(0, selected() + delta))
+    if (next !== selected()) props.onSelect(stops()[next].id)
+  }
+
+  return (
+    <div class="w-[248px] select-none p-3">
+      <div class="flex items-center gap-2">
+        <span class="text-[13px] leading-5 text-v2-text-text-faint">{i18n.t("ui.promptInput.effort")}</span>
+        <span class="truncate text-[13px] font-[530] capitalize leading-5 text-v2-text-text-base">
+          {label(selected())}
+        </span>
+      </div>
+      <div class="mt-2 flex items-center justify-between text-xs leading-4 text-v2-text-text-faint">
+        <span>{i18n.t("ui.promptInput.effortFaster")}</span>
+        <span>{i18n.t("ui.promptInput.effortSmarter")}</span>
+      </div>
+      <div
+        role="slider"
+        tabIndex={0}
+        aria-label={i18n.t("ui.promptInput.chooseVariant")}
+        aria-valuemin={0}
+        aria-valuemax={count() - 1}
+        aria-valuenow={selected()}
+        aria-valuetext={label(selected())}
+        aria-orientation="horizontal"
+        class="relative mt-1 h-6 rounded-md bg-v2-background-bg-layer-03 touch-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-strong"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId)
+          setDragging(true)
+          props.onSelect(stops()[at(event.clientX, event.currentTarget)].id)
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons & 1) props.onSelect(stops()[at(event.clientX, event.currentTarget)].id)
+        }}
+        onPointerUp={() => setDragging(false)}
+        onPointerCancel={() => setDragging(false)}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+            event.preventDefault()
+            step(-1)
+          } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
+            event.preventDefault()
+            step(1)
+          } else if (event.key === "Home") {
+            event.preventDefault()
+            props.onSelect(stops()[0].id)
+          } else if (event.key === "End") {
+            event.preventDefault()
+            props.onSelect(stops()[count() - 1].id)
+          }
+        }}
+      >
+        {/* The fill carries the level's tone from the tray edge to the knob, so the track reads the value
+            even before the eye reaches the knob. Same tone helper as the gauge needle, so the two never
+            disagree. */}
+        <span
+          aria-hidden="true"
+          class="absolute inset-y-0 left-0 rounded-md"
+          style={{
+            width: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(selected())})`,
+            background: thinkingTone(props.options, props.current),
+          }}
+        />
+        <For each={stops()}>
+          {(_, index) => (
+            <span
+              aria-hidden="true"
+              class={
+                index() === recommended()
+                  ? "absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-v2-text-text-base"
+                  : "absolute top-1/2 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-v2-text-text-faint"
+              }
+              style={{ left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(index())})` }}
+            />
+          )}
+        </For>
+        {/* Drifting dots across the track, always moving, never interactive. Their pace follows the level: a
+            drift at the bottom, a blur at the top, which is the only reading of "more" the motion
+            carries. Levels without a scale on them (default) drift at mid pace. Hidden under reduced
+            motion. */}
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 overflow-hidden rounded-md motion-reduce:hidden"
+        >
+          <For each={EFFORT_PARTICLES}>
+            {(particle) => (
+              <span
+                class="composer-effort-particle"
+                style={{
+                  top: `${particle.top}px`,
+                  "animation-duration": `${((1.9 / (0.6 + 5.4 * level())) * particle.pace).toFixed(2)}s`,
+                  "animation-delay": `${(particle.delay / (0.6 + 5.4 * level())).toFixed(2)}s`,
+                }}
+              />
+            )}
+          </For>
+        </span>
+        <span
+          aria-hidden="true"
+          class="absolute inset-y-0 w-[14px] rounded-[5px] bg-v2-text-text-contrast"
+          classList={{ "transition-[left] duration-150": !dragging() }}
+          style={{
+            left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(selected())})`,
+            transform: "translateX(-50%)",
+          }}
+        />
+      </div>
+      <div class="relative mt-1 h-4">
+        <span
+          class="absolute top-0 text-[11px] leading-4 whitespace-nowrap text-v2-text-text-faint"
+          classList={{
+            "left-0": recommended() === 0,
+            "right-0": recommended() === count() - 1,
+          }}
+          style={
+            recommended() === 0 || recommended() === count() - 1
+              ? undefined
+              : {
+                  left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(recommended())})`,
+                  transform: "translateX(-50%)",
+                }
+          }
+        >
+          {i18n.t("ui.promptInput.effortRecommended")}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function ComposerEditorConfiguredSelect(props: {
   mobileDrawer?: boolean
   title: string
@@ -827,6 +1168,14 @@ function ComposerEditorConfiguredSelect(props: {
   control: ComposerSelectControl
   model?: boolean
   class?: string
+  caret?: boolean
+  indicator?: JSX.Element
+  /** Icon-only trigger: a 24px square, so the hover fill is a circle rather than a pill. */
+  round?: boolean
+  /** Replaces the option list with custom menu content, for pickers that read as an instrument. */
+  panel?: JSX.Element
+  /** Extra class on the popover itself, for pickers that restyle their own window. */
+  popoverClass?: string
 }) {
   const current = () => props.control.current()
   const providerID = () => props.control.options().find((option) => option.id === current())?.providerID
@@ -836,6 +1185,11 @@ function ComposerEditorConfiguredSelect(props: {
       mobileDrawer={props.mobileDrawer}
       title={props.title}
       class={props.class}
+      caret={props.caret}
+      indicator={props.indicator}
+      round={props.round}
+      panel={props.panel}
+      popoverClass={props.popoverClass}
       keybind={props.control.keybind?.() ?? props.keybind}
       options={props.control.options()}
       current={current()}
@@ -857,6 +1211,16 @@ export function ComposerEditorSelect(props: {
   current: string
   currentIcon?: JSX.Element
   class?: string
+  /** The bar's chips read as one group; a caret on each would double the marks between them. */
+  caret?: boolean
+  /** Replaces the text label on the trigger, for a value that reads as a mark rather than a word. */
+  indicator?: JSX.Element
+  /** Icon-only trigger: a 24px square, so the hover fill is a circle rather than a pill. */
+  round?: boolean
+  /** Replaces the option list with custom menu content, for pickers that read as an instrument. */
+  panel?: JSX.Element
+  /** Extra class on the popover itself, for pickers that restyle their own window. */
+  popoverClass?: string
   onOpenChange?: (open: boolean) => void
   onSelect: (id: string) => void
 }) {
@@ -878,12 +1242,16 @@ export function ComposerEditorSelect(props: {
   const content = () => (
     <>
       {props.currentIcon}
-      <span class="truncate capitalize leading-5">
-        {props.options.find((option) => option.id === props.current)?.label ?? props.current}
-      </span>
-      <span class="-ms-0.5 -me-1 flex shrink-0">
-        <Icon name="chevron-down" />
-      </span>
+      <Show when={!props.indicator} fallback={props.indicator}>
+        <span class="truncate capitalize leading-5">
+          {props.options.find((option) => option.id === props.current)?.label ?? props.current}
+        </span>
+      </Show>
+      <Show when={props.caret ?? true}>
+        <span class="-ms-0.5 -me-1 flex shrink-0">
+          <Icon name="chevron-down" />
+        </span>
+      </Show>
     </>
   )
 
@@ -906,22 +1274,29 @@ export function ComposerEditorSelect(props: {
               as={Button}
               variant="ghost-muted"
               size="normal"
-              class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
+              class={`${props.round ? "composer-round-trigger" : "max-w-[220px] justify-start"} ![font-weight:440] ${props.class ?? ""}`}
               aria-label={props.title}
             >
               {content()}
             </Menu.Trigger>
             <Menu.Portal>
-              <Menu.Content>
-                <Menu.RadioGroup value={props.current} onChange={props.onSelect}>
-                  <For each={props.options}>
-                    {(option) => (
-                      <Menu.RadioItem value={option.id} class="capitalize" closeOnSelect>
-                        {option.label}
-                      </Menu.RadioItem>
-                    )}
-                  </For>
-                </Menu.RadioGroup>
+              <Menu.Content class={props.popoverClass}>
+                <Show
+                  when={props.panel}
+                  fallback={
+                    <Menu.RadioGroup value={props.current} onChange={props.onSelect}>
+                      <For each={props.options}>
+                        {(option) => (
+                          <Menu.RadioItem value={option.id} class="capitalize" closeOnSelect>
+                            {option.label}
+                          </Menu.RadioItem>
+                        )}
+                      </For>
+                    </Menu.RadioGroup>
+                  }
+                >
+                  {(panel) => panel()}
+                </Show>
               </Menu.Content>
             </Menu.Portal>
           </Menu>
@@ -933,7 +1308,7 @@ export function ComposerEditorSelect(props: {
           }}
           variant="ghost-muted"
           size="normal"
-          class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
+          class={`${props.round ? "composer-round-trigger" : "max-w-[220px] justify-start"} ![font-weight:440] ${props.class ?? ""}`}
           aria-label={props.title}
           aria-haspopup="dialog"
           aria-expanded={store.open}
@@ -951,25 +1326,32 @@ export function ComposerEditorSelect(props: {
               returnFocus={() => trigger}
             >
               <div class="flex flex-col overflow-hidden rounded-lg border border-v2-border-border-base bg-v2-background-bg-layer-02 divide-y divide-v2-border-border-base">
-                <For each={props.options}>
-                  {(option) => (
-                    <Button
-                      variant="ghost"
-                      class="w-full !h-10 !justify-start !rounded-none !px-3 !font-[440] capitalize focus-visible:!outline-offset-[-2px]"
-                      aria-pressed={props.current === option.id}
-                      data-state={props.current === option.id ? "pressed" : undefined}
-                      onClick={() => {
-                        props.onSelect(option.id)
-                        setOpen(false)
-                      }}
-                    >
-                      {option.label}
-                      <Show when={props.current === option.id}>
-                        <Icon name="check" class="ms-auto" />
-                      </Show>
-                    </Button>
-                  )}
-                </For>
+                <Show
+                  when={props.panel}
+                  fallback={
+                    <For each={props.options}>
+                      {(option) => (
+                        <Button
+                          variant="ghost"
+                          class="w-full !h-10 !justify-start !rounded-none !px-3 !font-[440] capitalize focus-visible:!outline-offset-[-2px]"
+                          aria-pressed={props.current === option.id}
+                          data-state={props.current === option.id ? "pressed" : undefined}
+                          onClick={() => {
+                            props.onSelect(option.id)
+                            setOpen(false)
+                          }}
+                        >
+                          {option.label}
+                          <Show when={props.current === option.id}>
+                            <Icon name="check" class="ms-auto" />
+                          </Show>
+                        </Button>
+                      )}
+                    </For>
+                  }
+                >
+                  {(panel) => panel()}
+                </Show>
               </div>
             </MobilePanelDrawer>
           </Suspense>
