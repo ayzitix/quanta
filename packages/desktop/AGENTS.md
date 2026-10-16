@@ -95,7 +95,7 @@ the other should move with it.
 The composer is two stacked regions, and the split between them is load-bearing.
 
 - `<form data-component="composer">` is the tray. `[data-slot="composer-bar"]` is its **sibling**, directly below,
-  both inside the editor root (`flex flex-col gap-1`).
+  both inside the editor root (`flex flex-col gap-0.5`).
 - Keep the bar outside the form. The add menu, agent and model controls used to sit inside the form next to the
   submit button; that gave the tray a second full row and made it roughly twice its intended height while looking
   like a one-line input.

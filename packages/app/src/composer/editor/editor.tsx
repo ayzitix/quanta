@@ -159,7 +159,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       : undefined
 
   return (
-    <div class={`relative size-full flex flex-col gap-1 ${props.class ?? ""}`}>
+    <div class={`relative size-full flex flex-col gap-0.5 ${props.class ?? ""}`}>
       <input
         ref={props.controller.setFileInput}
         type="file"
