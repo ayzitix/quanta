@@ -7,6 +7,7 @@ import type { DesktopPaths } from "../paths"
 import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
 import { storedBackgroundColor, titlebarOverlay, tone } from "./defaults"
+import { PACKAGED } from "../constants"
 
 const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
 
@@ -138,7 +139,7 @@ export function wireFullscreen(win: BrowserWindow) {
 }
 
 function iconsDir(path: Path.Path, paths: DesktopPaths.Resolved) {
-  return app.isPackaged ? path.join(process.resourcesPath, "icons") : path.join(paths.developmentResourcesRoot, "icons")
+  return PACKAGED ? path.join(process.resourcesPath, "icons") : path.join(paths.developmentResourcesRoot, "icons")
 }
 
 function iconPath(path: Path.Path, paths: DesktopPaths.Resolved) {

@@ -14,6 +14,7 @@ import { setAppQuitting } from "../windows"
 import { setExtensionAssets } from "../windows/protocol"
 import { extensionAsset } from "./assets"
 import type { ExtensionHost } from "./host"
+import { PACKAGED } from "../constants"
 
 /** The host once it loaded, and its load while one is in flight. */
 type LoadedHost = { host?: ExtensionHost; loading?: Promise<ExtensionHost> }
@@ -78,7 +79,7 @@ export const layer = Layer.effect(
             version: cli.version,
             command: cli.command,
             binary: cli.binary,
-            development: !app.isPackaged && !cli.binary,
+            development: !PACKAGED && !cli.binary,
           },
           subscriptions,
           servers,
