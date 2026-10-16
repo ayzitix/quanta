@@ -25,6 +25,70 @@
   );
 }
 
+/* Registered so the angle interpolates: an unregistered custom property would jump instead of sweep,
+   which is what made the earlier pass look like it stalled between iterations. */
+@property --composer-glint-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* The tray is flat, so the only affordance is this contour: absent while the field is idle, and a 1px
+   rim that catches the light while it has focus. A conic gradient masked down to the rim travels the
+   whole perimeter and bends around the corners, where a linear sweep only crosses one edge. */
+[data-component="composer"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background-image: conic-gradient(
+    from var(--composer-glint-angle),
+    transparent 0deg,
+    var(--v2-alpha-light-12) 22deg,
+    var(--v2-alpha-light-40) 45deg,
+    var(--v2-alpha-light-12) 68deg,
+    transparent 90deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+/* Kept well under full white on purpose: at 100% the sweep read as the loudest thing on an empty
+   screen and pulled attention off what the field is for, which is only saying it is ready. */
+[data-component="composer"]:focus-within::after {
+  opacity: 1;
+  animation: composer-tray-glint 3s linear infinite;
+}
+
+@keyframes composer-tray-glint {
+  to {
+    --composer-glint-angle: 360deg;
+  }
+}
+
+/* The appearance setting removes the contour outright rather than dimming it, so switching it off
+   leaves a tray that never animates instead of one whose animation is too faint to notice. */
+:root[data-composer-glint="off"] [data-component="composer"]::after {
+  content: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-component="composer"]:focus-within::after {
+    animation: none;
+    --composer-glint-angle: 45deg;
+  }
+}
+
 @media (hover: hover) {
   [data-component="composer"]:not(:hover) .composer-variant-default:not(:focus-visible, [data-expanded]) {
     opacity: 0;

@@ -130,6 +130,10 @@ const appearanceSchema = Persistence.struct({
   sans: Schema.String,
   terminal: Schema.String,
   tabLayout: Schema.Literals(["horizontal", "vertical"]),
+  // Documents persisted before this key existed would otherwise fail the whole struct decode and take
+  // the app down on start. The literal keeps Settings out of its own schema: defaultSettings is typed
+  // as Settings, so reading it here would make the type circular.
+  composerGlint: Persistence.fallback(Schema.Boolean, () => true),
 })
 
 const permissionsSchema = Persistence.struct({
@@ -284,7 +288,7 @@ export const defaultSettings: Settings = {
     terminalPlacement: "side",
     followUpBehavior: "steer",
   },
-  appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal" },
+  appearance: { fontSize: 14, mono: "", sans: "", terminal: "", tabLayout: "horizontal", composerGlint: true },
   keybinds: {},
   permissions: { autoApprove: false, autoApproveProjects: {} },
   workspaces: { defaultDestination: "last-used", lastUsed: {} },
@@ -321,6 +325,11 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       const mono = monoFontFamily(store.appearance?.mono)
       root.style.setProperty("--font-family-mono", mono)
       root.style.setProperty("--font-family-sans", sansFontFamily(store.appearance?.sans))
+      // The composer's focus contour reads the attribute rather than a class, so the setting applies
+      // without every tray having to observe the store.
+      if (store.appearance?.composerGlint ?? defaultSettings.appearance.composerGlint)
+        root.removeAttribute("data-composer-glint")
+      else root.setAttribute("data-composer-glint", "off")
       // Inline code can first appear during history backfill. Load its selected
       // face with the shell so that font discovery does not resize that mount.
       void document.fonts?.load(`440 13px ${mono}`).catch(() => undefined)
@@ -400,6 +409,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         tabLayout: withFallback(() => store.appearance?.tabLayout, defaultSettings.appearance.tabLayout),
         setTabLayout(value: TabLayout) {
           setStore("appearance", "tabLayout", value)
+        },
+        composerGlint: withFallback(() => store.appearance?.composerGlint, defaultSettings.appearance.composerGlint),
+        setComposerGlint(value: boolean) {
+          setStore("appearance", "composerGlint", value)
         },
       },
       keybinds: {

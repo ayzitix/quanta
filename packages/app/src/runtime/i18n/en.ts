@@ -720,6 +720,8 @@ export const dict = {
   "settings.appearance.row.tabs.description": "Choose how session tabs are arranged",
   "settings.appearance.row.tabs.horizontal": "Horizontal",
   "settings.appearance.row.tabs.vertical": "Vertical",
+  "settings.appearance.row.composerGlint.title": "Composer focus glow",
+  "settings.appearance.row.composerGlint.description": "Sweep a soft highlight around the prompt while it is focused",
   "settings.notifications.description": "Choose when to receive notifications and hear sounds",
   "settings.shortcuts.description": "Customize shortcuts for common actions",
   "settings.servers.description": "Manage server connections",
