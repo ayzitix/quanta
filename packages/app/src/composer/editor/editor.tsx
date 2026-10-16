@@ -1131,6 +1131,7 @@ export function ComposerEditorSubmitButton(props: {
         icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
         variant="ghost"
         class="size-7 rounded-md p-[6px]"
+        classList={{ "text-v2-state-fg-danger": props.stopping }}
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
           event.preventDefault()
