@@ -92,7 +92,8 @@ the other should move with it.
 
 ### Composer layout
 
-The composer is two stacked regions, and the split between them is load-bearing.
+The composer is a tray and a bar. The measurements below are one system: the tray's height sets the button insets,
+and the insets set the padding and the scroll-thumb offset. Change one and recompute the rest.
 
 - `<form data-component="composer">` is the tray. `[data-slot="composer-bar"]` is its **sibling**, directly below,
   both inside the editor root (`flex flex-col gap-0.5`).
@@ -106,35 +107,57 @@ The composer is two stacked regions, and the split between them is load-bearing.
   `rounded-full` is a 20px pill on the one-line tray and 90px on the 180px maximum, where the semicircular ends
   swallow the start and end of every line. The 20px cap equals half the one-line height, so changing that height
   means changing this number too.
-- The submit button is `size-7` (28px) and floats over the tray at `absolute end-1.5 bottom-1.5`. All three
-  gaps are 6px: the vertical ones come from `(40 − 28) / 2`, and the inset matches so the button is not
-  tighter to the right edge than to the top and bottom. Recompute from that formula rather than nudging it by
-  eye, and keep the three equal if either dimension changes.
-- Send is `arrow-up` and stop is `stop`.
-- Because the button floats over the text, the contenteditable needs `pe-14` to keep the last character clear of it.
-  Removing that padding puts text under the button as soon as a line fills.
-- The scroll thumb is offset with `inset-inline-end: 34px` on the composer. It rides the right edge by default,
-  which is where the send button floats, and the two overlapped by the button's inset. The number is `28 + 6`:
-  the button's width plus its inset, so it moves with either.
-- The actions row needs `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
+- Both buttons are `size-6` (24px) inside the tray, at `start-2`/`end-2` and `bottom-2`. All three gaps are 8px:
+  `(40 − 24) / 2`, and the horizontal inset matches so neither button is tighter to its edge than to the top and
+  bottom. Send is `arrow-up`, stop is `stop`.
+- The tray's text padding is `ps-11 pe-11` (44px), which clears a 24px button sitting 8px in: `8 + 24 + 12`. The
+  placeholder overlay carries the same padding on its own `absolute` layer and does **not** inherit the
+  contenteditable's — when the two disagree the hint slides under the add button.
+- The scroll thumb is offset with `inset-inline-end: 32px`: the button's width plus its inset. It rides the right
+  edge by default, which is where the send button floats, and the two overlapped.
+- The floating rows need `z-20`. The contenteditable is `relative z-10` so it covers the placeholder overlay, and a
   positioned element without a z-index loses to any element that has one. Without the higher stack the tray swallows
-  every click meant for the actions: the button looks fine, `elementFromPoint` at its centre returns the editor, and
-  the caret just blinks there instead of the control behaving like a button.
-- The submit button is `variant="ghost"`, not `submit`. `submit` paints a contrast fill with
-  `--v2-elevation-button-contrast`, which is a second elevation on a tray that is meant to stay flat. The tray's
-  flatness and this are the same decision: the button fills with `bg-inverse` / `danger/20` instead of a variant
-  that carries its own shadow.
+  every click meant for its actions: the button still measures right, but `elementFromPoint` at its centre returns
+  the editor and the caret just blinks there instead of the control behaving like a button.
+- The add button lives inside the tray, on the leading edge, and doubles as the menu's dismiss: `[data-expanded]`
+  turns it 45° into a cross and gives it the inverse fill. Kobalte already sets that attribute, so no open state
+  crosses into the component. The rules are unlayered on purpose — a layered rule would lose to the Tailwind
+  utilities carrying the closed colours.
 - The tray has no elevation. Do not put `shadow-[var(--v2-elevation-raised)]` back on the form — raised elevation
-  belongs to popovers, which still use it.
+  belongs to popovers, which still use it. The ring in `[data-dock-border-underlay]` is what carried the slab.
 - The tray's 1px rim is a `::before` pseudo-element masked to the border, not a `border` and not a box-shadow. A
-  real border takes a pixel out of the content box and breaks the 40px the button inset is derived from; a
-  box-shadow would replace the mask ring from `[data-dock-border-underlay]` rather than stack on it, because the
-  later declaration wins outright. The `::after` glint sits on this same rim.
+  real border takes a pixel out of the content box and breaks the 40px the insets derive from; a box-shadow would
+  replace the mask ring from `[data-dock-border-underlay]` rather than stack on it, because the later declaration
+  wins outright.
+- The focus glint is that same rim's `::after`: a conic gradient masked to it, so the highlight travels the whole
+  perimeter and bends around the corners, with `@property` on the angle so it interpolates and the 3s loop has no
+  stall. It appears only under `:focus-within`, so no component observes focus. The `composerGlint` appearance
+  setting writes `data-composer-glint="off"` on the root and the rule uses `content: none`, so switching it off
+  leaves a tray that never animates rather than one too faint to notice.
+- Send and stop keep their colour in mutually exclusive `classList` keys, not a base colour the stop state
+  overrules: two `bg-*` utilities in one cascade resolve by stylesheet order, not by intent. The tray has no
+  variant of its own — `variant="submit"` would repaint it with `--v2-elevation-button-contrast`.
+- The bar's trailing group is model then `barSlot`, right-aligned with `ms-auto` on the group rather than
+  `justify-end` on the row, which would drag the agent along with it. `barSlot` is a prop, not state: the generic
+  composer renders whatever the caller passes and knows nothing about sessions.
 - Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in
-  `providers/models/select-dialog.tsx`. The bar carries the add menu, agent and model only. Do not move the variant
-  control back onto the bar.
+  `providers/models/select-dialog.tsx`. Do not move the variant control back onto the bar.
 - The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
   exposes, so extra fade is an opacity modifier, not a second token.
+- The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where
+  the mark belongs; on the chip it was noise beside a name that already reads.
+
+### Extension content in the composer
+
+The bar hosts extension content through the `session.composer.bar` slot, one of five on `SlotMap`. Adding a slot
+means changing `SlotMap` with TSDoc, rendering it where it belongs, and updating the table in
+`packages/gui-extensions/README.md`; `bun script/sdk-docs.ts` fails on a stale guide block or an undocumented member.
+Two rules make this cheap to add and cheap to read:
+
+- The session composer fills the slot and the generic composer only receives it as a prop. That keeps
+  `ComposerEditor` free of session state, which is what lets the new-session screen reuse it unchanged.
+- It is mounted with the composer, so a contribution there is absent while the composer is unmounted and never on a
+  screen without a session. Pick `session.header` when the content should survive the composer being gone.
 
 ### Running the desktop on a machine without working Vulkan
 
