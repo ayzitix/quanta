@@ -405,10 +405,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 controls' own pill, not the text box above it: three marks in a row read as one control
                 group when they share a surface, and gap-0.5 keeps it tight without touching. */}
             <div class="ms-auto flex h-7 shrink-0 items-center gap-1">
-              <div
-                data-slot="composer-controls-tray"
-                class="flex h-7 shrink-0 items-center gap-0.5 rounded-full bg-v2-background-bg-base px-1"
-              >
+              <div data-slot="composer-controls-tray" class="flex h-7 shrink-0 items-center gap-0.5 rounded-full px-1">
                 <Show when={view.variant} keyed>
                   {(control) => (
                     <Show when={control.options().length > 1}>
@@ -435,9 +432,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 </Show>
               </div>
               <Show when={props.barSlot}>
+                {/* No fill and no rim: the slot carries one round readout, and a pill around it reads as a
+                    second control rather than as the mark. The 28px box stays as hit area only. */}
                 <div
                   data-slot="composer-bar-slot-tray"
-                  class="flex size-7 shrink-0 items-center justify-center rounded-full bg-v2-background-bg-base"
+                  class="flex size-7 shrink-0 items-center justify-center rounded-full"
                 >
                   {props.barSlot}
                 </div>

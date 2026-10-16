@@ -55,33 +55,13 @@
   pointer-events: none;
 }
 
-/* The controls' tray is the text tray's twin: the same fill and the same 1px hairline, so the row of model,
-   thinking power and context reads as one system rather than a second, weaker field. It repeats the rule
-   above instead of sharing a selector because the composer form also carries [data-dock-border-underlay]
-   and the focus glint, neither of which belongs on a control tray. Both trays share one definition: they are
-   the same object at two widths, and two copies of a hairline are two numbers to keep in step. */
+/* Neither bar tray carries a surface. Each holds one round mark now that the model moved into the text tray,
+   and an outlined pill around a single mark reads as a second control rather than as the mark itself — the
+   ring already brings its own stroke. Both stay in the DOM as hit area and as the anchor the chip radius
+   rule hangs off. */
 [data-slot="composer-controls-tray"],
 [data-slot="composer-bar-slot-tray"] {
   position: relative;
-}
-
-[data-slot="composer-controls-tray"]::before,
-[data-slot="composer-bar-slot-tray"]::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background-color: var(--v2-border-border-muted);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
 }
 
 /* The chips take their tray's radius and sit inset inside it, so a hover fill reads as a chip inside the
