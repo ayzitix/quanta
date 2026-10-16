@@ -4,7 +4,6 @@ import { Button } from "@opencode/ui/button"
 import { useDialog } from "@opencode/ui/context/dialog"
 import { Icon } from "@opencode/ui/icon"
 import { Keybind } from "@opencode/ui/keybind"
-import { ProviderModelIcon } from "@/providers/models/provider-group"
 import { Tooltip } from "@opencode/ui/tooltip"
 import { ComposerEditor } from "./editor/editor"
 import { ModelSelectorPopover } from "@/providers/models/select-dialog"
@@ -57,7 +56,6 @@ export function Composer(props: {
             title={language.t("command.model.choose")}
             keybind={command.keybindParts("model.choose")}
             model={props.model.model.selection}
-            provider={props.model.model.selection.current()?.provider}
             modelName={props.model.model.selection.current()?.name ?? language.t("dialog.model.select.title")}
             footer={
               <Show when={variantOptions().length > 1}>
@@ -98,7 +96,6 @@ function ComposerModelControl(props: {
   title: string
   keybind: string[]
   model: ComposerModel["model"]["selection"]
-  provider?: { id: string; canonical?: string; name: string }
   modelName: string
   footer?: JSX.Element
   onClose: () => void
@@ -109,14 +106,8 @@ function ComposerModelControl(props: {
 
   const content = () => (
     <>
-      <Show when={props.provider}>
-        {(provider) => (
-          <ProviderModelIcon
-            provider={provider()}
-            class="shrink-0 opacity-40 transition-opacity duration-150 group-hover:opacity-100"
-          />
-        )}
-      </Show>
+      {/* No provider mark on the chip: it sits under the tray where the name alone reads cleanly. The mark
+          belongs beside each name inside the selector, which already carries it per provider group. */}
       <span class="truncate leading-4">{props.modelName}</span>
       <span class="-ml-0.5 -mr-1 flex shrink-0">
         <Icon name="chevron-down" />
