@@ -159,7 +159,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       : undefined
 
   return (
-    <div class={`relative size-full flex flex-col gap-2 ${props.class ?? ""}`}>
+    <div class={`relative size-full flex flex-col gap-1 ${props.class ?? ""}`}>
       <input
         ref={props.controller.setFileInput}
         type="file"
@@ -238,7 +238,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-14 ps-4 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-11 ps-11 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -294,7 +294,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           <Show when={!props.controller.value()}>
             <div
               dir={state.mode === "normal" ? "auto" : "ltr"}
-              class="pointer-events-none absolute inset-x-0 top-0 px-4 pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
+              class="pointer-events-none absolute inset-x-0 top-0 ps-11 pe-11 pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
               classList={{ "font-mono!": state.mode === "shell" }}
               style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
             >
@@ -306,9 +306,32 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </Show>
         </ScrollView>
 
+        <div
+          data-slot="composer-leading"
+          aria-hidden={state.mode === "shell"}
+          inert={state.mode === "shell" ? true : undefined}
+          style={buttons()}
+          class="absolute start-2 bottom-2 z-20 flex shrink-0 items-center"
+        >
+          <ComposerEditorAddMenu
+            disabled={view.draftOnly || state.mode === "shell"}
+            title={i18n.t("ui.promptInput.add")}
+            keybind={props.attachKeybind ?? ["Mod", "U"]}
+            attachLabel={i18n.t("ui.promptInput.attachments")}
+            attachShortcut={props.attachShortcut ?? "Mod+U"}
+            commandsLabel={i18n.t("ui.promptInput.commands")}
+            contextLabel={i18n.t("ui.promptInput.context")}
+            shellLabel={i18n.t("ui.promptInput.shell")}
+            onAttach={props.controller.attach}
+            onCommands={props.controller.openCommands}
+            onContext={props.controller.openContext}
+            onShell={props.controller.openShell}
+          />
+        </div>
+
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions. */}
-        <div data-slot="composer-actions" class="absolute end-1.5 bottom-1.5 z-20 flex shrink-0 items-center">
+        <div data-slot="composer-actions" class="absolute end-2 bottom-2 z-20 flex shrink-0 items-center">
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
               controller={props.controller}
@@ -347,27 +370,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
 
       <div data-slot="composer-bar" class="flex h-9 items-center gap-1 px-1">
         <div
-          class="flex shrink-0 items-center"
-          aria-hidden={state.mode === "shell"}
-          inert={state.mode === "shell" ? true : undefined}
-          style={buttons()}
-        >
-          <ComposerEditorAddMenu
-            disabled={view.draftOnly || state.mode === "shell"}
-            title={i18n.t("ui.promptInput.add")}
-            keybind={props.attachKeybind ?? ["Mod", "U"]}
-            attachLabel={i18n.t("ui.promptInput.attachments")}
-            attachShortcut={props.attachShortcut ?? "Mod+U"}
-            commandsLabel={i18n.t("ui.promptInput.commands")}
-            contextLabel={i18n.t("ui.promptInput.context")}
-            shellLabel={i18n.t("ui.promptInput.shell")}
-            onAttach={props.controller.attach}
-            onCommands={props.controller.openCommands}
-            onContext={props.controller.openContext}
-            onShell={props.controller.openShell}
-          />
-        </div>
-        <div
           ref={controlsViewport}
           data-slot="composer-controls"
           data-overflow-start={overflow.start}
@@ -388,7 +390,11 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 />
               )}
             </Show>
-            <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
+            {/* ms-auto rather than justify-end on the row: that would push the agent along with the
+                model, and the agent belongs on the left while only the model sits right. */}
+            <div class="ms-auto flex shrink-0 items-center">
+              <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
+            </div>
           </div>
         </div>
       </div>
@@ -767,10 +773,11 @@ export function ComposerEditorAddMenu(props: {
           data-action="composer-attach"
           type="button"
           icon={<Icon name="plus" />}
-          variant="ghost-muted"
+          variant="ghost"
           size="large"
           disabled={props.disabled}
           aria-label={props.title}
+          class="size-6 rounded-full bg-v2-text-text-faint/55 p-1 text-v2-text-text-inverse"
         />
         <Menu.Portal>
           <Menu.Content
@@ -1130,7 +1137,7 @@ export function ComposerEditorSubmitButton(props: {
         tabIndex={props.mode === "normal" ? undefined : -1}
         icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />}
         variant="ghost"
-        class="size-7 rounded-full p-[6px]"
+        class="size-6 rounded-full p-1"
         classList={{
           // Mutually exclusive keys rather than a base colour the stop state overrules: two background
           // utilities in one cascade position it on stylesheet order, not on intent.

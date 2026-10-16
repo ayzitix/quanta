@@ -55,10 +55,27 @@
   pointer-events: none;
 }
 
+/* The add control doubles as the menu's dismiss: 45° turns the plus into a cross, which spares the tray a
+   second slot that only exists while the menu is open. Kobalte puts data-expanded on the trigger, so no open
+   state has to cross into the component. Unlayered on purpose: the closed colours are Tailwind utilities, and
+   a layered rule would lose to them. */
+[data-action="composer-attach"] [data-slot="icon-svg"] {
+  transition: transform 180ms ease;
+}
+
+[data-action="composer-attach"][data-expanded] [data-slot="icon-svg"] {
+  transform: rotate(45deg);
+}
+
+[data-action="composer-attach"][data-expanded] {
+  background-color: var(--v2-background-bg-inverse);
+  color: var(--v2-text-text-inverse);
+}
+
 /* The vertical scroll thumb rides the right edge, which is exactly where the send button floats, and the
-   two overlapped by the button's inset. Offset it past the control: 6px inset plus the 28px button. */
+   two overlapped by the button's inset. Offset it past the control: 8px inset plus the 24px button. */
 [data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
-  inset-inline-end: 34px;
+  inset-inline-end: 32px;
 }
 
 /* Registered so the angle interpolates: an unregistered custom property would jump instead of sweep,
