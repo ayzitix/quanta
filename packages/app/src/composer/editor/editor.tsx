@@ -83,8 +83,6 @@ export type ComposerEditorProps = {
   borderUnderlay?: boolean
   class?: string
   modelControl?: JSX.Element
-  /** Sits between the model control and `barSlot`. The caller owns it, so this editor stays free of model state. */
-  afterModel?: JSX.Element
   /** Sits before the model control. The caller owns it, so this editor stays free of session state. */
   barSlot?: JSX.Element
   modelControlsVisible?: boolean
@@ -398,7 +396,19 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 model, and the agent belongs on the left while only the model sits right. */}
             <div class="ms-auto flex shrink-0 items-center gap-1">
               <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
-              {props.afterModel}
+              <Show when={view.variant} keyed>
+                {(control) => (
+                  <Show when={control.options().length > 1}>
+                    <ComposerEditorConfiguredSelect
+                      mobileDrawer
+                      title={i18n.t("ui.promptInput.chooseVariant")}
+                      keybind={["Shift", "Mod", "D"]}
+                      control={control}
+                      class={control.current() === "default" ? "composer-variant-default" : undefined}
+                    />
+                  </Show>
+                )}
+              </Show>
               {props.barSlot}
             </div>
           </div>

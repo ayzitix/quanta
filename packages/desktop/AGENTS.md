@@ -137,11 +137,13 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - Send and stop keep their colour in mutually exclusive `classList` keys, not a base colour the stop state
   overrules: two `bg-*` utilities in one cascade resolve by stylesheet order, not by intent. The tray has no
   variant of its own — `variant="submit"` would repaint it with `--v2-elevation-button-contrast`.
-- The bar's trailing group is model then `barSlot`, right-aligned with `ms-auto` on the group rather than
-  `justify-end` on the row, which would drag the agent along with it. `barSlot` is a prop, not state: the generic
-  composer renders whatever the caller passes and knows nothing about sessions.
-- Thinking power lives in the model popover footer, handed over as `footer` to `ModelSelectorPopover` in
-  `providers/models/select-dialog.tsx`. Do not move the variant control back onto the bar.
+- The bar's trailing group is model, then the thinking-power chip, then `barSlot`, right-aligned with `ms-auto` on
+  the group rather than `justify-end` on the row, which would drag the agent along with it. `barSlot` is a prop, not
+  state: the generic composer renders whatever the caller passes and knows nothing about sessions.
+- Thinking power is `view.variant` rendered by the editor itself, right after the model control: a
+  `ComposerEditorConfiguredSelect`, gated on `options().length > 1`, keybind `Shift+Mod+D`. It is not a popover
+  footer and not a segmented group. The editor reads it off `props.controller.view`, so `composer/model.ts` stays the
+  only owner of model state and `composer/composer.tsx` needs no variant code at all.
 - The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
   exposes, so extra fade is an opacity modifier, not a second token.
 - The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where
