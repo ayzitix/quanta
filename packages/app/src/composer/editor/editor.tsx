@@ -1131,7 +1131,11 @@ export function ComposerEditorSubmitButton(props: {
         icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
         variant="ghost"
         class="size-7 rounded-md p-[6px]"
-        classList={{ "text-v2-state-fg-danger": props.stopping }}
+        classList={{
+          // A translucent wash of the danger foreground, not state-bg-danger: that token resolves to
+          // red-1200 in dark, which reads as near-black rather than a red control.
+          "bg-v2-state-fg-danger/20 text-v2-state-fg-danger": props.stopping,
+        }}
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
           event.preventDefault()
