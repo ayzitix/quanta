@@ -90,6 +90,26 @@ pipeline that needs macOS. Run `bun scripts/generate-brand-icons.ts`, or `--chec
 stack is now centred instead, so only `startup/splash.tsx` still anchors there. If you move one, check whether
 the other should move with it.
 
+### The default theme's dark variant
+
+`packages/ui/src/theme/themes/oc-2.json` is the theme every user lands on: `resolveStoredTheme` returns `oc-2`
+for any unknown or missing id, and `loader.ts` treats `oc-2` as _the_ default theme. Its **dark** variant carries
+the palette; its light variant is still the original one, deliberately, so changing the app's dark surface does
+not silently restyle the light one too.
+
+The background is set in two places and both are needed. `dark.palette.neutral` is the seed the v2 resolver
+mixes a whole grey ramp from, so it is what gives the ramp its warmth — set it and the whole neutral scale warms
+together. `dark.v2Overrides["v2-grey-1000"]` pins the one step the user actually sees as the page background,
+because the generated ramp quantises and does not land on an exact requested hex; the seed alone put the
+background at `#110d07` when `#141008` was asked for. Scaling the whole ramp to force the step lands would be
+worse than the pin — a linear per-channel ratio clips the light end to white and flattens grey-100 through
+grey-200 into one step.
+
+Warmth here is a deliberate, small number: `#12100b` has a red-minus-blue spread of 7, so it reads as a dark
+neutral with a faint warm cast rather than as brown. That spread is the thing to check when someone says the
+grey "went too warm" or "is too cold", and it is worth adjusting at the seed and the pin together, since a
+change to one alone leaves the ramp and the visible background disagreeing about the hue.
+
 ### Composer layout
 
 The composer is a tray and a bar. The measurements below are one system: the tray's height sets the button insets,
