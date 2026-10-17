@@ -203,6 +203,26 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   panel lists all of them, so the chip's whole job is to name the current one. Opened, it shows
   `ComposerEffortPanel`: stops are every option with `default` at the recommended one, and the dot drift
   speeds up with the level.
+- The effort window opens on its trigger's **trailing** edge (`placement="top-end"`, threaded through
+  `ComposerEditorSelect` as an optional prop). The chip is content-width and the trailing group is pinned to
+  the end of the bar, so the chip's _leading_ edge is a function of the label's length — measured 64px at
+  "low", 66 at "high", 82 at "default", 88 at "medium" — and moving it moves anything anchored there. With
+  `top-start` the window slid 24px every time the level changed. The trailing edge is the one edge the bar
+  holds still. Do not "fix" this by giving the chip a fixed width instead: a shorter word then sits in a box
+  padded out to the longest one, and the label has to truncate in every language with longer words.
+- The slider commits on release, not on every pointer move. While the pointer is down the panel follows a local
+  `draft` index — the knob, the fill and the header readout all read `draft() ?? selected()` — and
+  `onSelect` fires once in `onPointerUp`. `onPointerCancel` drops the draft and commits nothing: a cancelled
+  drag is a gesture the user took back. Keyboard stepping still commits immediately, since no drag is
+  involved. Committing per `pointermove` relabelled the tray chip under the open panel on every pixel.
+- The effort dots peak at `opacity: 0.5` in `@keyframes composer-effort-dot`, not in the element: the
+  animation animates `opacity`, so an element-level value would be overwritten on every frame. At full
+  strength seven dots crossing a 24px track read as debris rather than as motion.
+- Their scatter is drawn once per panel from `effortParticles()` — the fixed `EFFORT_PARTICLE_LANES` table
+  plus a small random height, pace and phase jitter. Called once for the life of the panel, not per render:
+  a plain table sends all seven dots down the same lanes every time the window opens, and a memo would
+  reshuffle them under the pointer mid-drag. Keep the jitter small — the table is the rhythm, the jitter only
+  breaks it up.
 - The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
   exposes, so extra fade is an opacity modifier, not a second token.
 - The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where

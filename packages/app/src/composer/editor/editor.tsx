@@ -9,6 +9,7 @@ import {
   Show,
   Suspense,
   lazy,
+  type ComponentProps,
   type JSX,
 } from "solid-js"
 import { createStore } from "solid-js/store"
@@ -453,6 +454,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                         }
                         title={i18n.t("ui.promptInput.chooseVariant")}
                         action="composer-variant"
+                        placement="top-end"
                         keybind={["Shift", "Mod", "D"]}
                         control={control}
                         class={control.current() === "default" ? "composer-variant-default" : undefined}
@@ -940,8 +942,14 @@ function thinkingTone(options: ComposerOption[], current: string) {
 
 /** Dot start heights and pace multipliers across the 24px track. Negative delays start each dot mid-flight,
     so the track never opens empty. The multipliers keep the dots out of lockstep with each other; the
-    absolute pace comes from the level. */
-const EFFORT_PARTICLES = [
+    absolute pace comes from the level.
+
+    The jitter is drawn once per panel, not once per module: a fixed table sends the seven dots down the same
+    lanes every time the window opens, and the eye catches that long before it catches anything else. A
+    little vertical and phase drift reads as motion instead of as a pattern. The ranges stay inside the track
+    — at most ±2px of height on a 24px band and a fraction of a second of phase — so no dot clips an edge or
+    crowds its neighbours. */
+const EFFORT_PARTICLE_LANES = [
   { top: 3, pace: 0.85, delay: 0 },
   { top: 7, pace: 1.15, delay: -0.7 },
   { top: 11, pace: 0.7, delay: -1.1 },
@@ -950,6 +958,12 @@ const EFFORT_PARTICLES = [
   { top: 9, pace: 0.9, delay: -0.9 },
   { top: 17, pace: 1.05, delay: -0.5 },
 ]
+const effortParticles = () =>
+  EFFORT_PARTICLE_LANES.map((lane) => ({
+    top: lane.top + Math.round((Math.random() - 0.5) * 5),
+    pace: lane.pace + Math.random() * 0.16 - 0.08,
+    delay: lane.delay - Math.random() * 0.5,
+  }))
 
 /** An effort slider for the thinking level, in the shape of the mock: a header with the current value, a
     Faster/Smarter scale, a ticked track with a knob and drifting streaks, and a Recommended caption under
@@ -996,9 +1010,20 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
     return Math.round(f * (count() - 1))
   }
   const [dragging, setDragging] = createSignal(false)
+  // While the knob is held the panel follows the pointer and nothing is committed. Committing per
+  // pointermove relabelled the tray chip under the open panel on every pixel, and the chip is content-width,
+  // so its leading edge moved with the word. One commit on release is also what a slider is expected to
+  // do: the level is chosen when the drag ends, not while it is still a question.
+  const [draft, setDraft] = createSignal<number>()
+  const shown = createMemo(() => draft() ?? selected())
+  // Drawn once for the life of the panel, so the scatter survives re-renders instead of reshuffling under
+  // the pointer while a drag is in progress.
+  const particles = effortParticles()
   const step = (delta: number) => {
-    const next = Math.min(count() - 1, Math.max(0, selected() + delta))
-    if (next !== selected()) props.onSelect(stops()[next].id)
+    const next = Math.min(count() - 1, Math.max(0, shown() + delta))
+    if (next === shown()) return
+    setDraft(undefined)
+    props.onSelect(stops()[next].id)
   }
 
   return (
@@ -1006,7 +1031,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
       <div class="flex items-center gap-2">
         <span class="text-[13px] leading-5 text-v2-text-text-faint">{i18n.t("ui.promptInput.effort")}</span>
         <span class="truncate text-[13px] font-[530] capitalize leading-5 text-v2-text-text-base">
-          {label(selected())}
+          {label(shown())}
         </span>
       </div>
       <div class="mt-2 flex items-center justify-between text-xs leading-4 text-v2-text-text-faint">
@@ -1019,20 +1044,29 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
         aria-label={i18n.t("ui.promptInput.chooseVariant")}
         aria-valuemin={0}
         aria-valuemax={count() - 1}
-        aria-valuenow={selected()}
-        aria-valuetext={label(selected())}
+        aria-valuenow={shown()}
+        aria-valuetext={label(shown())}
         aria-orientation="horizontal"
         class="relative mt-1 h-6 rounded-md bg-v2-background-bg-layer-03 touch-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-strong"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
           setDragging(true)
-          props.onSelect(stops()[at(event.clientX, event.currentTarget)].id)
+          setDraft(at(event.clientX, event.currentTarget))
         }}
         onPointerMove={(event) => {
-          if (event.buttons & 1) props.onSelect(stops()[at(event.clientX, event.currentTarget)].id)
+          if (event.buttons & 1) setDraft(at(event.clientX, event.currentTarget))
         }}
-        onPointerUp={() => setDragging(false)}
-        onPointerCancel={() => setDragging(false)}
+        onPointerUp={() => {
+          setDragging(false)
+          const value = draft()
+          setDraft(undefined)
+          if (value !== undefined) props.onSelect(stops()[value].id)
+        }}
+        // A cancelled drag is a gesture the user took back: drop the preview and leave the level alone.
+        onPointerCancel={() => {
+          setDragging(false)
+          setDraft(undefined)
+        }}
         onKeyDown={(event) => {
           if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
             event.preventDefault()
@@ -1056,7 +1090,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
           aria-hidden="true"
           class="absolute inset-y-0 left-0 rounded-md"
           style={{
-            width: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(selected())})`,
+            width: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(shown())})`,
             background: thinkingTone(props.options, props.current),
           }}
         />
@@ -1081,7 +1115,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
           aria-hidden="true"
           class="pointer-events-none absolute inset-0 overflow-hidden rounded-md motion-reduce:hidden"
         >
-          <For each={EFFORT_PARTICLES}>
+          <For each={particles}>
             {(particle) => (
               <span
                 class="composer-effort-particle"
@@ -1099,7 +1133,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
           class="absolute inset-y-0 w-[14px] rounded-[5px] bg-v2-text-text-contrast"
           classList={{ "transition-[left] duration-150": !dragging() }}
           style={{
-            left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(selected())})`,
+            left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(shown())})`,
             transform: "translateX(-50%)",
           }}
         />
@@ -1133,6 +1167,8 @@ function ComposerEditorConfiguredSelect(props: {
   keybind?: string[]
   /** Names the trigger so a rule can key on it; aria-label is a translated string, not a hook. */
   action?: string
+  /** Which edge of the trigger the window lines up with. */
+  placement?: ComponentProps<typeof Menu.Sub>["placement"]
   control: ComposerSelectControl
   model?: boolean
   class?: string
@@ -1152,6 +1188,7 @@ function ComposerEditorConfiguredSelect(props: {
       class={props.class}
       caret={props.caret}
       action={props.action}
+      placement={props.placement}
       panel={props.panel}
       popoverClass={props.popoverClass}
       keybind={props.control.keybind?.() ?? props.keybind}
@@ -1176,6 +1213,7 @@ export function ComposerEditorSelect(props: {
   currentIcon?: JSX.Element
   class?: string
   action?: string
+  placement?: ComponentProps<typeof Menu.Sub>["placement"]
   /** Both bar chips open a window, so both carry a caret; set false only for a trigger with another disclosure of its own. */
   caret?: boolean
   /** A mark that leads the label, for a value that reads as a picture beside its name. */
@@ -1229,7 +1267,7 @@ export function ComposerEditorSelect(props: {
       <Show
         when={props.mobileDrawer && mobile()}
         fallback={
-          <Menu gutter={6} modal={false} placement="top-start" onOpenChange={props.onOpenChange}>
+          <Menu gutter={6} modal={false} placement={props.placement ?? "top-start"} onOpenChange={props.onOpenChange}>
             <Menu.Trigger
               as={Button}
               variant="ghost-muted"

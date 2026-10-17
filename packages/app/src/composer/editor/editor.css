@@ -131,17 +131,20 @@
 }
 
 /* Drifting dots across the effort track, one keyframe paced per dot inline: a dot fades in just past the
-   edge, holds, and fades out before the far edge, so nothing pops at the boundary. */
+   edge, holds, and fades out before the far edge, so nothing pops at the boundary. They peak at half
+   opacity: at full strength seven of them crossing a 24px track read as debris rather than as motion, and
+   the pace already carries the level, so the dots do not need to shout it as well. The element's own
+   `opacity` is the animated property, so this is the only place the peak can live. */
 @keyframes composer-effort-dot {
   from {
     transform: translateX(-8px);
     opacity: 0;
   }
   15% {
-    opacity: 0.9;
+    opacity: 0.5;
   }
   80% {
-    opacity: 0.9;
+    opacity: 0.5;
   }
   to {
     transform: translateX(232px);
