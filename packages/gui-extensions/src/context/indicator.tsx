@@ -118,11 +118,18 @@ export function SessionContextUsage(props: {
       {/* The bar's ring is an icon in a 28px tray beside chips that carry text, and at 16px it filled its
           cell exactly — the one mark in the row with no air around it. Two pixels off puts the circle inside
           the tray the way the chips sit inside theirs, without shrinking it into illegibility. Scoped to
-          `iconOnly` because the figures variant shows the number beside the ring and wants the larger one. */}
+          `iconOnly` because the figures variant shows the number beside the ring and wants the larger one.
+
+          The stroke is 2.5 rather than 2 because `strokeWidth` is in viewBox units and the indicator's viewBox
+          is 16 whatever the rendered size: dropping the size to 14 scales the ring by 0.875 and quietly thins
+          the stroke from 2px to 1.75px along with it. 2.5 restores it and a little more. It thickens inward
+          and not outward because `radius` is `center - strokeWidth / 2`, so the outer edge stays pinned to the
+          viewBox and the extra weight is spent inside the circle — which is what keeps the mark the size the
+          tray gave it. */}
       <ProgressCircle
         appearance={props.iconOnly ? "indicator" : "compact"}
         size={props.iconOnly ? 14 : 16}
-        strokeWidth={props.iconOnly ? 2 : undefined}
+        strokeWidth={props.iconOnly ? 2.5 : undefined}
         percentage={context()?.usage ?? 0}
         style={
           props.iconOnly

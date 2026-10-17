@@ -126,6 +126,12 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - The context ring in the bar is the `session.composer.bar` slot's content, and it is **14px**, not the 16px the
   figures variant uses. At 16 it filled its 28px tray exactly, the one mark in the row with no air around it. The
   size is keyed on `iconOnly` because that prop marks the bar's instance alone, so no other consumer moves.
+- Its stroke is **2.5**, and that number has to move whenever the size does. `ProgressCircle` takes `strokeWidth`
+  in viewBox units and the indicator's viewBox is 16 whatever it renders at, so dropping the size to 14 scales
+  the ring by 0.875 and thins the stroke from 2px to 1.75px along with it. It thickens inward and not outward
+  because `radius` is `center - strokeWidth / 2`, which pins the outer edge to the viewBox and spends the extra
+  weight inside — that is what keeps the mark the size the tray gave it. Measured: 2.19px rendered, outer edge at
+  `6.75 + 2.5/2 = 8`, the centre line.
 - Keep the bar outside the form. The add menu, agent and model controls used to sit inside the form next to the
   submit button; that gave the tray a second full row and made it roughly twice its intended height while looking
   like a one-line input.
