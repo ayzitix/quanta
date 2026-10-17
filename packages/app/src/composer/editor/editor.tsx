@@ -1014,6 +1014,11 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
   // level reads as one of the levels at all times while the position stays continuous underneath.
   const nearest = (value: number) => Math.round(Math.min(count() - 1, Math.max(0, value)))
   const [dragging, setDragging] = createSignal(false)
+  // The drag ended, but the snap it asked for has not landed yet. `dragging` alone is not enough to cover
+  // this window: the commit lands tens of milliseconds later, once `props.current` changes, and by then the
+  // knob is no longer "dragging" — so a transition keyed on that alone animated the snap the panel had just
+  // made, and the fill, which has no transition, jumped there instantly. The two visibly parted company.
+  const [settling, setSettling] = createSignal(false)
   // While the knob is held the panel follows the pointer and nothing is committed. Committing per
   // pointermove relabelled the tray chip under the open panel on every pixel, and the chip is content-width,
   // so its leading edge moved with the word. One commit on release is also what a slider is expected to
@@ -1026,6 +1031,14 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
   // `onSelect` waits for release. Reading `props.current` instead is what made the slider look inert — the
   // colour did not move until the drag was already over.
   const preview = createMemo(() => stops()[choice()]?.id ?? props.current)
+  // Hand the knob back to the committed level once the commit lands, so a released drag is not left frozen
+  // on its preview if the selection is refused and the level never changes.
+  createEffect(() => {
+    const value = draft()
+    if (value === undefined || selected() !== value) return
+    setDraft(undefined)
+    setSettling(false)
+  })
   const level = createMemo(() => {
     const ids = thinkingLevelIDs(props.options)
     if (preview() === "default") return 0.5
@@ -1067,20 +1080,30 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId)
           setDragging(true)
+          setSettling(false)
           setDraft(at(event.clientX, event.currentTarget))
         }}
         onPointerMove={(event) => {
           if (event.buttons & 1) setDraft(at(event.clientX, event.currentTarget))
         }}
         onPointerUp={() => {
-          setDragging(false)
           const value = draft()
-          setDraft(undefined)
-          if (value !== undefined) props.onSelect(stops()[nearest(value)].id)
+          if (value === undefined) return
+          // Snap the preview to the stop it is about to commit, and only then drop the drag state. The order
+          // is the whole fix: `dragging` is what switches the knob's `transition-[left]` off, so ending the
+          // drag first left the knob animating into the snap it was already in — the fill has no transition
+          // and changed colour instantly, so the two visibly parted company for 150ms every time a drag
+          // overshot a level. Snap while still dragging and nothing moves; the colour and the knob change on
+          // the same frame.
+          setDraft(nearest(value))
+          props.onSelect(stops()[nearest(value)].id)
+          setDragging(false)
+          setSettling(true)
         }}
         // A cancelled drag is a gesture the user took back: drop the preview and leave the level alone.
         onPointerCancel={() => {
           setDragging(false)
+          setSettling(false)
           setDraft(undefined)
         }}
         onKeyDown={(event) => {
@@ -1144,13 +1167,35 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
             )}
           </For>
         </span>
+        {/* The darkening lives under the knob, not around it. The handle is the one light mark on the
+            track and it loses its edge exactly where the fill is brightest, so the contrast belongs where
+            the two meet. It is wider than the knob on purpose: sized to match it, it sat entirely behind a
+            28px handle and could not be seen at all. Twice the width leaves ten pixels of gradient showing on
+            each side, which is what makes it read as a shadow rather than as a second mark on the line.
+            Painted before the knob so the fill shows through it. */}
         <span
           aria-hidden="true"
-          class="absolute inset-y-0 w-[14px] rounded-[5px] bg-v2-text-text-contrast"
-          classList={{ "transition-[left] duration-150": !dragging() }}
+          data-slot="composer-effort-knob-shade"
+          class="absolute inset-y-0 w-12 -translate-x-1/2"
+          classList={{ "transition-[left] duration-150": !dragging() && !settling() }}
           style={{
             left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(shown())})`,
-            transform: "translateX(-50%)",
+          }}
+        />
+        {/* The knob is a square, not the 14x24 lozenge the track's height used to dictate: a handle that is
+            taller than it is wide reads as a bar sliding along a groove rather than as something you pick up.
+            At 28px it also sits proud of the 24px track, centred on it, so it is clearly the thing above the
+            line rather than a mark painted on it. The shape is a squircle at 12px — near the half-box a radius
+            clamps at, so the corner is as full as a 28px square allows. */}
+        <span
+          aria-hidden="true"
+          data-slot="composer-effort-knob"
+          class="absolute left-0 size-7 rounded-[12px] bg-v2-text-text-contrast"
+          classList={{ "transition-[left] duration-150": !dragging() && !settling() }}
+          style={{
+            left: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(shown())})`,
+            top: "50%",
+            transform: "translate(-50%, -50%)",
           }}
         />
       </div>

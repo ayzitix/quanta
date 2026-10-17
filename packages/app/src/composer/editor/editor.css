@@ -161,6 +161,31 @@
   }
 }
 
+/* The darkening under the knob: a contact shadow, not a plate. A flat fill at one opacity is a rectangle with
+   two hard vertical edges sitting on the line, which reads as a patch stuck on top rather than as depth under
+   the handle. The gradient is darkest under the knob itself and falls away to nothing at both ends, so the
+   fill keeps its colour everywhere the eye actually compares it.
+
+   Declared here because `bg-v2-alpha-dark-40` generates nothing in this Tailwind build — the class compiled,
+   the element stayed transparent, and the contrast simply was not there. The colour is a translucent black
+   rather than one of the border roles: those are light overlays in the dark theme, the wrong direction for a
+   shadow under the one light mark on this track. */
+/* The knob's corners. `corner-shape` is declared here for the same reason as the shade below: the
+   `corner-shape-squircle` utility is not in this Tailwind build, so the class compiles and does nothing. */
+[data-slot="composer-effort-knob"] {
+  corner-shape: squircle;
+}
+
+[data-slot="composer-effort-knob-shade"] {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--v2-alpha-dark-40) 34%,
+    var(--v2-alpha-dark-40) 66%,
+    transparent
+  );
+}
+
 .composer-effort-particle {
   position: absolute;
   left: 0;

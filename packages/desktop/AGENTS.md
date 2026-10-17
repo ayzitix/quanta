@@ -231,6 +231,23 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   `--v2-state-fg-success`. That token is the app's "this worked" green, and on a dial it read as a status
   rather than as a level running cool. The palette has no lime, so it is mixed from the two hues bracketing
   it rather than hardcoding a hex a custom theme would contradict — and `color-mix` keeps it theme-aware.
+- The knob is a 28px square squircle at 12px, centred on the 24px track so it sits proud of it. It was a
+  14×24 lozenge the track's height dictated, which read as a bar sliding in a groove rather than as something
+  you pick up. The corner is `corner-shape: squircle` **declared in `editor.css`**, because the
+  `corner-shape-squircle` utility is not in this Tailwind build: the class compiles and silently does
+  nothing. `bg-v2-alpha-dark-40` is missing for the same reason — it compiled and left the element
+  transparent. When a class would express one of these, check the computed style before believing it applied.
+- The contrast under the knob is a **contact shadow**, `[data-slot="composer-effort-knob-shade"]`: a gradient
+  plate painted before the knob, darkest under it, transparent at both ends, and deliberately **twice the
+  knob's width**. Sized to match it, a 28px shade sat entirely behind a 28px handle and could not be seen at
+  all. A flat fill at one opacity reads as a rectangle with two hard vertical edges pasted onto the line; the
+  gradient is what makes it read as depth. An outline around the knob instead would be drawn _over_ the fill.
+- The knob's `transition-[left]` is keyed on `!dragging() && !settling()`, and both states are needed.
+  `dragging` alone leaves a gap: the release drops the drag immediately but the commit lands tens of
+  milliseconds later, and in that window the knob is no longer "dragging" — so it animated the very snap the
+  panel had just made, while the fill, which has no transition, jumped there instantly. That is what made the
+  knob visibly lag the coloured line every time a drag overshot a level. `settling` is armed on release and
+  cleared when the draft is dropped, which happens only once `selected()` matches it.
 - The effort dots peak at `opacity: 0.5` in `@keyframes composer-effort-dot`, not in the element: the
   animation animates `opacity`, so an element-level value would be overwritten on every frame. At full
   strength seven dots crossing a 24px track read as debris rather than as motion.
