@@ -74,12 +74,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     keywords: "thinking reasoning tools timeline summary detailed",
   },
   {
-    tab: "general",
-    label: "settings.general.row.showCustomAgents.title",
-    target: "settings-show-custom-agents",
-    section: "settings.general.section.general",
-  },
-  {
     tab: "appearance",
     label: "settings.general.row.colorScheme.title",
     target: "settings-color-scheme",

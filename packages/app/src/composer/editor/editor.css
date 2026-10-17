@@ -76,7 +76,11 @@
    pastes a square block into a round tray the moment it fills, and its own height, which would run the fill
    into the tray's rim. The rule is unlayered for the reason the glint is: a layered rule loses to the
    Tailwind utility and to the inline height it replaces. `button.css` is layered, so this also beats the
-   variant's own radius, which is why the model chip carries no `!rounded-full` to be overridden. */
+   variant's own radius, which is why the model chip carries no `!rounded-full` to be overridden.
+
+   The leading group is not a tray — it draws no surface and carries no rim — but the chip inside it needs
+   the same contour, or the row has two contour languages either side of the gap. */
+[data-slot="composer-leading"] button,
 [data-slot="composer-controls-tray"] button {
   height: 24px;
   border-radius: 9999px;
@@ -195,13 +199,16 @@
    with its 45° turn, keyed on the same attribute. `Menu.Trigger` publishes `[data-expanded]`, so a rule
    written against `aria-expanded` silently never matches; the second selector covers the hand-built
    drawer trigger, which publishes the ARIA state instead. The trigger is hooked by `data-action` rather
-   than by its `aria-label`, which is a translated string. */
+   than by its `aria-label`, which is a translated string. The add control's own 45° turn is above and is not
+   part of this: it rotates a glyph into a cross, not a caret. */
 [data-action="composer-model"] [data-slot="icon-svg"],
+[data-action="composer-agent"] [data-slot="icon-svg"],
 [data-action="composer-variant"] [data-slot="icon-svg"] {
   transition: transform 180ms ease;
 }
 
 [data-action="composer-model"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"],
+[data-action="composer-agent"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"],
 [data-action="composer-variant"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"] {
   transform: rotate(180deg);
 }

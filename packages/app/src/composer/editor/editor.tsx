@@ -379,7 +379,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
           aria-hidden={state.mode === "shell"}
           inert={state.mode === "shell" ? true : undefined}
           style={buttons()}
-          class="flex shrink-0 items-center px-1"
+          class="flex shrink-0 items-center gap-1 px-1"
         >
           <ComposerEditorAddMenu
             disabled={view.draftOnly || state.mode === "shell"}
@@ -395,6 +395,21 @@ export function ComposerEditor(props: ComposerEditorProps) {
             onContext={props.controller.openContext}
             onShell={props.controller.openShell}
           />
+          {/* The agent joins the add control at the leading end. It was the first thing in the scrolling
+              viewport, so it was the first thing to scroll away when the row overflowed, while the model and
+              the thinking level sat still at the trailing end — the two things you change least were the two
+              that stayed. Naming the agent is a choice about the message, not a readout, so it belongs with
+              the control that starts one. */}
+          <Show when={view.agent} keyed>
+            {(control) => (
+              <ComposerEditorConfiguredSelect
+                title={i18n.t("ui.promptInput.chooseAgent")}
+                action="composer-agent"
+                keybind={["Mod", "."]}
+                control={control}
+              />
+            )}
+          </Show>
         </div>
         <div
           ref={controlsViewport}
@@ -408,19 +423,10 @@ export function ComposerEditor(props: ComposerEditorProps) {
           style={buttons()}
         >
           <div ref={controlsContent} class="flex h-full w-max min-w-full items-center gap-1">
-            <Show when={view.agent} keyed>
-              {(control) => (
-                <ComposerEditorConfiguredSelect
-                  title={i18n.t("ui.promptInput.chooseAgent")}
-                  keybind={["Mod", "."]}
-                  control={control}
-                />
-              )}
-            </Show>
-            {/* ms-auto rather than justify-end on the row: that would push the agent along with the
-                model, and the agent belongs on the left while only the model sits right. The tray is the
-                controls' own pill, not the text box above it: two marks in a row read as one control group
-                when they share a surface, and gap-0.5 keeps it tight without touching. */}
+            {/* ms-auto pins the trailing group to the end of whatever width the viewport currently has,
+                so the row follows the field as it resizes instead of the controls drifting in from the left.
+                The tray is the controls' own pill, not the text box above it: two marks in a row read as
+                one control group when they share a surface, and gap-0.5 keeps it tight without touching. */}
             <div class="ms-auto flex h-7 shrink-0 items-center gap-1">
               <div data-slot="composer-controls-tray" class="flex h-7 shrink-0 items-center gap-0.5 rounded-full px-1">
                 {/* The model sits with the thinking level, not in the tray. Both answer "what is this prompt

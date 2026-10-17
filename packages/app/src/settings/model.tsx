@@ -115,7 +115,6 @@ const generalSchema = Persistence.struct({
     notices: placementOnlySchema,
     tools: placementOnlySchema,
   }),
-  showCustomAgents: Schema.Boolean,
   showTurnDiffs: Schema.Boolean,
   mobileTitlebarPosition: Schema.Literals(["top", "bottom"]),
   // Owned by the review extension, which copies it out once; kept so settings rewrites cannot drop it first.
@@ -282,7 +281,6 @@ export const defaultSettings: Settings = {
   general: {
     showFileTree: false,
     timelineDetail: { ...timelinePresets[2].value },
-    showCustomAgents: false,
     showTurnDiffs: false,
     mobileTitlebarPosition: "top",
     terminalPlacement: "side",
@@ -313,11 +311,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
   init: () => {
     const [store, setStore, , ready] = persisted({ key: "settings.v3" }, settingsPersistence, defaultSettings)
     const showFileTree = withFallback(() => store.general?.showFileTree, defaultSettings.general.showFileTree)
-
-    const showCustomAgents = withFallback(
-      () => store.general?.showCustomAgents,
-      defaultSettings.general.showCustomAgents,
-    )
 
     createEffect(() => {
       if (typeof document === "undefined") return
@@ -358,10 +351,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setTimelineDetail(value: TimelineDetail) {
           setStore("general", "timelineDetail", structuredClone(unwrap(value)))
         },
-        showCustomAgents,
-        setShowCustomAgents(value: boolean) {
-          setStore("general", "showCustomAgents", value)
-        },
         showTurnDiffs: withFallback(() => store.general?.showTurnDiffs, defaultSettings.general.showTurnDiffs),
         setShowTurnDiffs(value: boolean) {
           setStore("general", "showTurnDiffs", value)
@@ -387,7 +376,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       },
       visibility: {
         fileTree: showFileTree,
-        customAgents: showCustomAgents,
       },
       appearance: {
         fontSize: withFallback(() => store.appearance?.fontSize, defaultSettings.appearance.fontSize),

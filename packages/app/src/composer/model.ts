@@ -16,6 +16,7 @@ import { usePlatform } from "@/runtime/platform/platform"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { resolveBlobUrl } from "@/runtime/persistence/drafts"
 import { useData, useServer } from "@/runtime/server/current"
+import { defaultAgent } from "@/providers/models/agent"
 import { showToast } from "@/shell/notifications/toast"
 import { formatServerError } from "@/runtime/server/errors"
 import { Skill } from "@opencode/schema/skill"
@@ -389,16 +390,21 @@ export function createComposerModel(adapter: ComposerAdapter, options?: { queue?
     view: {
       placeholder,
       get agent() {
-        const agents = adapter.controls().agents
-
-        return agents.visible && agents.options.length > 0
-          ? {
-              options: () => adapter.controls().agents.options.map((name) => ({ id: name, label: name })),
-              current: () => adapter.controls().agents.current,
-              onSelect: (value: string) => adapter.controls().agents.select(value),
-              keybind: () => command.keybindParts("agent.cycle"),
-            }
-          : undefined
+        // Always present, and the options fall back to `defaultAgent` when the server reported none. This was
+        // gated twice — on a setting, then on a non-empty list — so an empty agent list removed the control
+        // altogether: no names, no way to see which agent the session runs as, even though the app resolves
+        // to `build` everywhere else anyway. One honest entry beats no control. The option list is fixed, not
+        // derived from `current`: `current` is what `select` writes, so a list built from it came back
+        // duplicated out of whichever agent was just picked.
+        return {
+          options: () =>
+            (adapter.controls().agents.options.length > 0 ? adapter.controls().agents.options : [defaultAgent]).map(
+              (name) => ({ id: name, label: name }),
+            ),
+          current: () => adapter.controls().agents.current || defaultAgent,
+          onSelect: (value: string) => adapter.controls().agents.select(value),
+          keybind: () => command.keybindParts("agent.cycle"),
+        }
       },
       variant: {
         options: () => variants().map((value) => ({ id: value, label: value })),

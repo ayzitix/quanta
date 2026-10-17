@@ -184,6 +184,15 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - Both bar chips carry a caret. They are the only disclosure-looking controls in the row, and two marks without
   carets read as readouts you cannot open. It was the reverse once and both marks sat shoulder to shoulder
   looking inert.
+- The agent picker is `view.agent`, at the leading end of the bar next to the add control. It has one gate,
+  `view.agent` returns `undefined` only when the user has switched agents off in Settings → General, and its
+  options fall back to `defaultAgent` when the server reports none. That fallback is the point: the gate used
+  to be `visible && options.length > 0`, so an empty agent list removed the control entirely — no names, no way
+  to see which agent the session runs as, even though the app resolves to `build` everywhere else anyway. One
+  honest entry beats no control. Building those options out of `current` instead of a fixed list does not work:
+  `current` is what `select` writes, so the list rebuilds from the agent just picked and comes back duplicated.
+- The bar's trailing group is measured, not assumed. `ms-auto` pins the model, the thinking level and the
+  context ring to the end of whatever width the viewport has, so the row follows the field as it resizes.
 - Thinking power is `view.variant` rendered by the editor itself: a `ComposerEditorConfiguredSelect` gated on
   `options().length > 1`, keybind `Shift+Mod+D`. It is not a popover footer and not a segmented group. The
   editor reads it off `props.controller.view`, so `composer/model.ts` stays the only owner of model state and
