@@ -25,12 +25,18 @@
   );
 }
 
-/* Pill at the one-line height, capped so a tall tray does not turn into a lozenge. A percentage radius
-   resolves against the box, so rounded-full is 20px on a 40px tray and 90px on the 180px maximum, where
-   the semicircular ends swallow the start and end of every line. The cap matches the one-line tray, so
-   raising that height is the one edit that moves this number too. */
+/* Squircle at the one-line height, capped so a tall tray does not turn into a lozenge. A percentage radius
+   resolves against the box, so 50% is 20px on a 40px tray and 90px on the 180px maximum, where the
+   semicircular ends swallow the start and end of every line. The cap matches the one-line tray, so raising
+   that height is the one edit that moves this number too.
+
+   `corner-shape` is what makes this a squircle rather than a pill. A corner radius resolves against half the
+   box, so 20px is also the ceiling here — this is the fullest squircle a 40px tray can carry, and a corner
+   that hugs the box like the iOS one needs about 34px, hence a 68px tray. It does not inherit, so the two
+   pseudo-elements below have to ask for it explicitly or the rim draws a circle on top of a squircle. */
 [data-component="composer"] {
   border-radius: min(50%, 20px);
+  corner-shape: squircle;
 }
 
 /* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
@@ -42,6 +48,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  corner-shape: inherit;
   padding: 1px;
   background-color: var(--v2-border-border-muted);
   -webkit-mask:
@@ -58,33 +65,36 @@
 /* Neither bar tray carries a surface. Each holds one round mark now that the model moved into the text tray,
    and an outlined pill around a single mark reads as a second control rather than as the mark itself — the
    ring already brings its own stroke. Both stay in the DOM as hit area and as the anchor the chip radius
-   rule hangs off. */
+   rule hangs off. They have no contour of their own to shape, so only their chips do. */
 [data-slot="composer-controls-tray"],
 [data-slot="composer-bar-slot-tray"] {
   position: relative;
 }
 
-/* The chips take their tray's radius and sit inset inside it, so a hover fill reads as a chip inside the
-   tray rather than as the tray itself changing. Each button variant carries a small radius, which pastes a
-   square block into a round tray the moment it fills, and its own height, which would run the fill into the
-   tray's rim. The rule is unlayered for the reason the glint is: a layered rule loses to the Tailwind
-   utility and to the inline height it replaces. */
+/* The chips take their tray's contour and sit inset inside it, so a hover fill reads as a chip inside the
+   tray rather than as the tray itself changing. Each button variant carries a small circular radius, which
+   pastes a square block into a round tray the moment it fills, and its own height, which would run the fill
+   into the tray's rim. The rule is unlayered for the reason the glint is: a layered rule loses to the
+   Tailwind utility and to the inline height it replaces. `button.css` is layered, so this also beats the
+   variant's own radius, which is why the model chip carries no `!rounded-full` to be overridden. */
 [data-slot="composer-controls-tray"] button {
   height: 24px;
   border-radius: 9999px;
+  corner-shape: squircle;
 }
 
 [data-slot="composer-bar-slot-tray"] button {
   border-radius: 9999px;
+  corner-shape: squircle;
 }
 
-/* An icon-only chip is a 24px square, so its hover fill is a circle. Width, padding and centring live here
-   rather than in utilities because the trigger's own variant carries padding, and two same-specificity
-   utilities would resolve by stylesheet order instead of by intent. */
-[data-slot="composer-controls-tray"] .composer-round-trigger {
-  width: 24px;
-  padding-inline: 0;
-  justify-content: center;
+/* The two 24px icon buttons take the tray's contour too, so the shapes inside it are one language rather
+   than a squircle tray with two round studs. Their radius stays `rounded-full`: on a 24px box that clamps to
+   12px, which is also the ceiling a squircle has here, so the shape changes without the number moving. The
+   add button's open state inverts the fill on the same element, so it follows the curve in both states. */
+[data-action="composer-attach"],
+[data-action="composer-submit"] {
+  corner-shape: squircle;
 }
 
 /* The effort popover is flat: the tray and the panel already carry their own hairlines and fills, so the
@@ -148,17 +158,28 @@
   animation-iteration-count: infinite;
 }
 
-/* The add control doubles as the menu's dismiss: 45° turns the plus into a cross, which spares the tray a
+/* The add control doubles as the menu's dismiss: 45° turns the plus into a cross, which spares the bar a
    second slot that only exists while the menu is open. Kobalte puts data-expanded on the trigger, so no open
    state has to cross into the component. Unlayered on purpose: the closed colours are Tailwind utilities, and
-   a layered rule would lose to them. */
-/* The add button keeps its own fill and glyph colour. `icon-button.css` sets both on the ghost variant at
-   (0,2,0) — `background-color: transparent` and its own `color` — which beats any Tailwind colour utility at
-   (0,1,0), so a class on the trigger silently does nothing and the button stays see-through. This rule is
-   (0,4,0) and excludes the open state, so it outranks every ghost state rule while the [data-expanded] rule
-   below still owns the inverted look. */
-[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost"]:not([data-expanded]) {
-  background-color: var(--v2-background-bg-layer-02);
+   a layered rule would lose to them.
+
+   There is no fill rule here at any state, open or closed, and that is the point. It carried a grey pill
+   while it lived inside the tray, then a near-white inverted pill when open — a block that inverted to white
+   in the middle of a row of muted marks read as an alert, not as "this menu is showing". The rotation is the
+   whole disclosure now, and `ghost-muted` already gives the open state its own pressed overlay, which is the
+   same affordance every other mark in the bar uses.
+
+   The colour is set here rather than by choosing a variant, because `ghost-muted` is not one colour.
+   `button-v2` gives its label `--v2-text-text-muted` while `icon-button-v2` gives the whole control
+   `--v2-icon-icon-muted`, a step darker — so an icon-only button on that variant sits visibly below its
+   neighbours whichever of the two it happens to inherit. Taking the chips' label token is what makes the row
+   read as one set, and the open state mirrors theirs at `--v2-text-text-base`. Unlayered, to beat the
+   variant's own colour at (0,2,0). */
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"] {
+  color: var(--v2-text-text-muted);
+}
+
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"][data-expanded] {
   color: var(--v2-text-text-base);
 }
 
@@ -170,23 +191,18 @@
   transform: rotate(45deg);
 }
 
-/* Open state inverts both: a near-white circle with a near-black cross (grey-100 on grey-1000 in the dark
-   theme). The jump is deliberate — together with the 45° turn it is the clearest "this menu is open" the
-   control has, and the rotation alone was not enough on its own. */
-[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost"][data-expanded] {
-  background-color: var(--v2-background-bg-inverse);
-  color: var(--v2-text-text-inverse);
-}
-
-/* The model chip's caret flips while its popover is open — the same disclosure the add button gives with
-   its 45° turn, keyed on the same attribute. `Menu.Trigger` publishes `[data-expanded]`, so a rule written
-   against `aria-expanded` silently never matches; the second selector covers the hand-built drawer
-   trigger, which publishes the ARIA state instead. */
-[data-action="composer-model"] [data-slot="icon-svg"] {
+/* Both bar chips flip their caret while their window is open — the same disclosure the add button gives
+   with its 45° turn, keyed on the same attribute. `Menu.Trigger` publishes `[data-expanded]`, so a rule
+   written against `aria-expanded` silently never matches; the second selector covers the hand-built
+   drawer trigger, which publishes the ARIA state instead. The trigger is hooked by `data-action` rather
+   than by its `aria-label`, which is a translated string. */
+[data-action="composer-model"] [data-slot="icon-svg"],
+[data-action="composer-variant"] [data-slot="icon-svg"] {
   transition: transform 180ms ease;
 }
 
-[data-action="composer-model"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"] {
+[data-action="composer-model"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"],
+[data-action="composer-variant"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"] {
   transform: rotate(180deg);
 }
 
@@ -214,6 +230,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  corner-shape: inherit;
   padding: 1px;
   background-image: conic-gradient(
     from var(--composer-glint-angle),

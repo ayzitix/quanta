@@ -103,10 +103,23 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
   `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
   height and hid the regression.
-- The tray's radius is `min(50%, 20px)`, not `rounded-full`. A percentage radius resolves against the box, so
-  `rounded-full` is a 20px pill on the one-line tray and 90px on the 180px maximum, where the semicircular ends
-  swallow the start and end of every line. The 20px cap equals half the one-line height, so changing that height
-  means changing this number too.
+- The tray's radius is `min(50%, 20px)`, not `rounded-full`, and its shape is `corner-shape: squircle`. A
+  percentage radius resolves against the box, so `rounded-full` is a 20px pill on the one-line tray and 90px on
+  the 180px maximum, where the semicircular ends swallow the start and end of every line. The 20px cap equals
+  half the one-line height, so changing that height means changing this number too — and it is also the
+  ceiling, because a corner radius clamps to half the box. A corner that hugs the frame the way the iOS one
+  does needs about 34px, hence a 68px tray, so **a 40px tray can only carry the tightest possible squircle**,
+  not the expressive one. This is a real constraint, not a preference to tune.
+- `corner-shape` does **not** inherit. The tray's `::before` rim and `::after` glint both need an explicit
+  `corner-shape: inherit`, or they draw circular hairlines on top of a squircle and the mismatch shows exactly
+  at the corners, where the eye goes first. Confirm with `getComputedStyle(tray, '::before').cornerShape` —
+  it reads `superellipse(1)` if the declaration was dropped.
+- The two 24px icon buttons take the tray's contour as well: `[data-action="composer-attach"]` and
+  `[data-action="composer-submit"]` both get `corner-shape: squircle`, and their radius stays `rounded-full`,
+  which on a 24px box clamps to 12px — the same ceiling a squircle has there. So the shape changes and the
+  number does not. A squircle tray with two circular studs inside reads as two different languages; the fill
+  is what carries the shape, and the add button's open state inverts that fill on the same element, so it
+  follows the curve in both states.
 - Both buttons are `size-6` (24px) inside the tray, at `start-2`/`end-2` and `bottom-2`. All three gaps are 8px:
   `(40 − 24) / 2`, and the horizontal inset matches so neither button is tighter to its edge than to the top and
   bottom. Send is `arrow-up`, stop is `stop`.
@@ -146,33 +159,41 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - The model rides inside the **text tray**, in `composer-actions` before the submit button, not in the bar. It
   names what the prompt is about to run on, so it reads as the sentence's own furniture; the bar below is the
   instrument cluster — readouts, not inputs. Keep it at `size="small"` (24px) so it matches the submit
-  button it sits beside, and remember the text carries `pe-11` (44px) for that button, so a long line can run
-  under the chip.
+  button it sits beside, and remember the text's trailing padding is measured, see below.
 - The bar is two trays, not one row: `composer-controls-tray` holds the thinking-power chip,
-  `composer-bar-slot-tray` holds whatever `barSlot` carries. Both are the text tray's twins — `bg-base`, a 1px
-  `::before` rim in `--v2-border-border-muted`, `rounded-full` — so the controls read as part of the same
-  system. The slot tray is `size-7` (28px square) so its radius is a true circle; the controls tray is `h-7` with
-  `px-1`. `ms-auto` sits on the group around both trays, not on the row, for the reason below.
+  `composer-bar-slot-tray` holds whatever `barSlot` carries. Both carry **no surface at all** — no fill, no
+  rim, no shadow. They were the text tray's twins with a hairline until the fill was dropped, and the mark
+  read better on its own: a pill of its own around a mark that already sits on a pill above it doubles the
+  surface and flattens both. They keep only the text tray's geometry — `rounded-full`, and the chip contour
+  that goes with it. They have no contour of their own to shape, since nothing draws one. The slot tray is
+  `size-7` (28px square) so its radius is a true circle; the controls tray is `h-7` with `px-1`. `ms-auto`
+  sits on the group around both trays, not on the row, for the reason below.
 - `justify-end` on the controls row would drag the agent along, so the trailing group uses `ms-auto`. `barSlot`
   is a prop, not state: the generic composer renders whatever the caller passes and knows nothing about sessions.
-- Chips inside the trays take the tray's radius from `editor.css`, not from their own variant. Every button
-  variant carries a small radius, which reads as a square block pasted into a round tray the moment it takes
-  the hover fill. The rule is unlayered for the same reason the glint is.
+- Chips take the tray's contour from `editor.css`, not from their own variant: radius **and** shape. Every
+  button variant carries a small circular radius, which reads as a square block pasted into the tray the moment
+  it takes the hover fill, and a circular hover fill inside a squircle tray is the pairing that looks like an
+  accident. The rule is unlayered for the same reason the glint is, which also means it beats the variant's own
+  radius — `button.css` sits in `@layer components` — so **no chip needs `!rounded-full`**. The model chip is
+  the one that looks like it does: it is inside the text tray rather than a bar tray, so it needs its own hook
+  (`[data-component="composer"] [data-action="composer-model"]`) to reach the same rule.
 - Colour on these controls cannot come from Tailwind classes. `icon-button.css` and `button.css` set
   `background-color` and `color` on the button itself at (0,2,0), which outranks every colour utility at (0,1,0)
   — a class on the trigger silently does nothing and the control stays transparent. `editor.css` owns those
   colours at (0,4,0) instead, and excludes the open state so the inverse rule still owns it.
-- The model chip carries a caret; the thinking chip does not. One caret per control reads as a disclosure, two
-  side by side double the punctuation between marks that already sit shoulder to shoulder.
+- Both bar chips carry a caret. They are the only disclosure-looking controls in the row, and two marks without
+  carets read as readouts you cannot open. It was the reverse once and both marks sat shoulder to shoulder
+  looking inert.
 - Thinking power is `view.variant` rendered by the editor itself: a `ComposerEditorConfiguredSelect` gated on
   `options().length > 1`, keybind `Shift+Mod+D`. It is not a popover footer and not a segmented group. The
   editor reads it off `props.controller.view`, so `composer/model.ts` stays the only owner of model state and
   `composer/composer.tsx` needs no variant code at all.
-- Its trigger draws a gauge instead of the word: `ComposerThinkingGauge` copies `ProgressCircle`'s own numbers
-  for the context icon — viewBox 16, r 7, a 2px stroke, `--v2-background-bg-layer-04` for the dimmed track —
-  so the two round marks in the bar are the same mark at different jobs. `default` parks mid-scale with no arc,
-  never below `none`, which is explicitly no thinking. Opened, it shows `ComposerEffortPanel`: stops are every
-  option with `default` at the recommended one, and the dot drift speeds up with the level.
+- Its trigger is the word alone. A dial beside it was tried twice — icon only, then icon plus label — and
+  both failed for the same reason: at 14px a needle says "some level" and nothing more, so the mark either
+  replaced a word that already answered it or repeated it. The value has five or six possible names and the
+  panel lists all of them, so the chip's whole job is to name the current one. Opened, it shows
+  `ComposerEffortPanel`: stops are every option with `default` at the recommended one, and the dot drift
+  speeds up with the level.
 - The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
   exposes, so extra fade is an opacity modifier, not a second token.
 - The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where

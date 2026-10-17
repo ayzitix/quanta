@@ -104,10 +104,10 @@ export function ComposerEditor(props: ComposerEditorProps) {
   let tray: HTMLFormElement | undefined
   let actions: HTMLDivElement | undefined
 
-  // The trailing actions hold the model chip and the submit button, and their width is not knowable from CSS:
-  // the chip carries whatever the session runs on, and it changes with the model, the language and the plan.
-  // Measure the row and publish it, so the text clears all of it. Reserving only the submit button — which is
-  // what a fixed trailing padding does — leaves the chip sitting on the last line of a long prompt.
+  // The trailing actions hold the submit button and whatever delivery control is showing, and their width is
+  // not knowable from CSS: the delivery control appears and disappears with the session's settings. Measure
+  // the row and publish it, so the text clears all of it. Reserving only the submit button — which is what a
+  // fixed trailing padding does — leaves a control sitting on the last line of a long prompt.
   createResizeObserver(
     () => actions,
     (rect) => tray?.style.setProperty("--composer-actions", `${Math.ceil(rect.width)}px`),
@@ -253,7 +253,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-11 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-4 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -307,9 +307,12 @@ export function ComposerEditor(props: ComposerEditorProps) {
             onFocus={() => props.controller.dispatch({ type: "focus.editor" })}
           />
           <Show when={!props.controller.value()}>
+            {/* The hint is a sibling overlay, not the editor's own text: it does not inherit the padding above,
+                and when the two disagree the hint slides away from where the text will actually start. The
+                leading pad is a plain field inset now that no button shares the tray's leading edge. */}
             <div
               dir={state.mode === "normal" ? "auto" : "ltr"}
-              class="pointer-events-none absolute inset-x-0 top-0 ps-11 pe-[calc(var(--composer-actions,44px)+12px)] pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
+              class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[calc(var(--composer-actions,44px)+12px)] pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
               classList={{ "font-mono!": state.mode === "shell" }}
               style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
             >
@@ -321,29 +324,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
           </Show>
         </ScrollView>
 
-        <div
-          data-slot="composer-leading"
-          aria-hidden={state.mode === "shell"}
-          inert={state.mode === "shell" ? true : undefined}
-          style={buttons()}
-          class="absolute start-2 bottom-2 z-20 flex shrink-0 items-center"
-        >
-          <ComposerEditorAddMenu
-            disabled={view.draftOnly || state.mode === "shell"}
-            title={i18n.t("ui.promptInput.add")}
-            keybind={props.attachKeybind ?? ["Mod", "U"]}
-            attachLabel={i18n.t("ui.promptInput.attachments")}
-            attachShortcut={props.attachShortcut ?? "Mod+U"}
-            commandsLabel={i18n.t("ui.promptInput.commands")}
-            contextLabel={i18n.t("ui.promptInput.context")}
-            shellLabel={i18n.t("ui.promptInput.shell")}
-            onAttach={props.controller.attach}
-            onCommands={props.controller.openCommands}
-            onContext={props.controller.openContext}
-            onShell={props.controller.openShell}
-          />
-        </div>
-
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions. */}
         <div
@@ -351,19 +331,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
           data-slot="composer-actions"
           class="absolute end-2 bottom-2 z-20 flex max-w-[calc(100%-104px)] items-center"
         >
-          {/* The model rides in the tray, not the bar: it names the thing the prompt is about to run on, so
-              it reads as part of the sentence's own furniture the way the reference does. The bar keeps the
-              instrument cluster — thinking gauge and context ring — which are readouts, not inputs.
-
-              The row is capped at the tray's width less what the text needs: 52px reserved at the leading
-              edge for the add button and 44px at the trailing edge for the submit button, plus an 8px gap.
-              Without it a long model name takes the whole tray and the text runs under it. The chip shrinks
-              inside the cap and its label ellipsises. */}
-          <Show when={state.mode === "normal"}>
-            <div class="me-1 flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
-              <Show when={props.modelControlsVisible ?? true}>{props.modelControl}</Show>
-            </div>
-          </Show>
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
               controller={props.controller}
@@ -401,6 +368,34 @@ export function ComposerEditor(props: ComposerEditorProps) {
       </form>
 
       <div data-slot="composer-bar" class="flex h-9 items-center gap-1 px-1">
+        {/* The add control moved out of the tray and to the leading end of this bar, where the agent chip
+            already sits. It was a button floating inside the text field, and it bought its space with a
+            44px leading pad on every line of text — a whole column of padding whose only job was to clear a
+            24px control. On the bar it is a control among controls, next to the agent it shares a row with,
+            and the tray is left holding the sentence and nothing else. It sits outside the scrolling viewport
+            so it does not scroll away with the agent when the row overflows. */}
+        <div
+          data-slot="composer-leading"
+          aria-hidden={state.mode === "shell"}
+          inert={state.mode === "shell" ? true : undefined}
+          style={buttons()}
+          class="flex shrink-0 items-center px-1"
+        >
+          <ComposerEditorAddMenu
+            disabled={view.draftOnly || state.mode === "shell"}
+            title={i18n.t("ui.promptInput.add")}
+            keybind={props.attachKeybind ?? ["Mod", "U"]}
+            attachLabel={i18n.t("ui.promptInput.attachments")}
+            attachShortcut={props.attachShortcut ?? "Mod+U"}
+            commandsLabel={i18n.t("ui.promptInput.commands")}
+            contextLabel={i18n.t("ui.promptInput.context")}
+            shellLabel={i18n.t("ui.promptInput.shell")}
+            onAttach={props.controller.attach}
+            onCommands={props.controller.openCommands}
+            onContext={props.controller.openContext}
+            onShell={props.controller.openShell}
+          />
+        </div>
         <div
           ref={controlsViewport}
           data-slot="composer-controls"
@@ -424,19 +419,25 @@ export function ComposerEditor(props: ComposerEditorProps) {
             </Show>
             {/* ms-auto rather than justify-end on the row: that would push the agent along with the
                 model, and the agent belongs on the left while only the model sits right. The tray is the
-                controls' own pill, not the text box above it: three marks in a row read as one control
-                group when they share a surface, and gap-0.5 keeps it tight without touching. */}
+                controls' own pill, not the text box above it: two marks in a row read as one control group
+                when they share a surface, and gap-0.5 keeps it tight without touching. */}
             <div class="ms-auto flex h-7 shrink-0 items-center gap-1">
               <div data-slot="composer-controls-tray" class="flex h-7 shrink-0 items-center gap-0.5 rounded-full px-1">
+                {/* The model sits with the thinking level, not in the tray. Both answer "what is this prompt
+                    about to run as", and keeping them on one row is what makes the bar read as the row of
+                    settings for this message. In the tray the model competed with the sentence it belonged
+                    to and pushed the text out to a measured padding. */}
+                <Show when={props.modelControlsVisible ?? true}>
+                  <div class="flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
+                    {props.modelControl}
+                  </div>
+                </Show>
                 <Show when={view.variant} keyed>
                   {(control) => (
                     <Show when={control.options().length > 1}>
                       <ComposerEditorConfiguredSelect
                         mobileDrawer
-                        caret={false}
-                        round
                         popoverClass="composer-effort-popover"
-                        indicator={<ComposerThinkingGauge options={control.options()} current={control.current()} />}
                         panel={
                           <ComposerEffortPanel
                             options={control.options()}
@@ -445,6 +446,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                           />
                         }
                         title={i18n.t("ui.promptInput.chooseVariant")}
+                        action="composer-variant"
                         keybind={["Shift", "Mod", "D"]}
                         control={control}
                         class={control.current() === "default" ? "composer-variant-default" : undefined}
@@ -859,7 +861,10 @@ export function ComposerEditorAddMenu(props: {
               <path d="M8 4.5v7M4.5 8h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           }
-          variant="ghost"
+          /* ghost-muted, not ghost: the bar's other marks are all `ghost-muted`, whose colour is
+             `--v2-icon-icon-muted`. `ghost` resolves to `--v2-text-text-base`, a step brighter, which made
+             this one mark read as the row's primary control while the rest of it stayed muted. */
+          variant="ghost-muted"
           disabled={props.disabled}
           aria-label={props.title}
           class="size-6 rounded-full"
@@ -925,72 +930,6 @@ function thinkingTone(options: ComposerOption[], current: string) {
   if (level < 0.34) return "var(--v2-state-fg-success)"
   if (level < 0.67) return "var(--v2-state-fg-warning)"
   return "var(--v2-red-700)"
-}
-
-/** A dial with a needle at the thinking level. The chip is round and a label like "xhigh" competes with the
-    model name beside it, while a needle reads as a value at a glance and at that size. The menu keeps the
-    words, which is the only place they are worth reading. */
-function ComposerThinkingGauge(props: { options: ComposerOption[]; current: string }) {
-  // "none" is the floor of the scale and "default" is not on it: the provider decides, so the needle parks
-  // mid-scale with no arc — unmarked, but at the recommended position rather than in the gap. Parking it at
-  // the minimum made it read as the weakest state, below an explicit "no thinking", which is backwards.
-  const position = createMemo(() => {
-    if (props.current === "default") return { needle: 0.5, arc: 0 }
-    const ids = thinkingLevelIDs(props.options)
-    const level = Math.max(0, ids.indexOf(props.current)) / Math.max(1, ids.length - 1)
-    return { needle: level, arc: level }
-  })
-  const needle = createMemo(() => {
-    // A dial rather than a speedometer arc: the chip is round and the mark inside it should be too. The
-    // needle sweeps three quarters, from the lower left round the top to the lower right, which leaves the
-    // gap where a real gauge has one and keeps the empty reading pointing down instead of sideways. It is a
-    // tapered quad rather than a stroked line, because a stroke is one width end to end and reads as a stick.
-    // Each edge is offset from the end it belongs to: offsetting both from the hub collapses the tip onto
-    // the axis and leaves a dot.
-    const hub = { x: 8, y: 8 }
-    const angle = (135 + position().needle * 270) * (Math.PI / 180)
-    const tip = { x: hub.x + 5.4 * Math.cos(angle), y: hub.y + 5.4 * Math.sin(angle) }
-    const length = Math.hypot(tip.x - hub.x, tip.y - hub.y) || 1
-    const side = { x: -(tip.y - hub.y) / length, y: (tip.x - hub.x) / length }
-    const at = (base: { x: number; y: number }, offset: number, sign: number) =>
-      `${(base.x + side.x * sign * offset).toFixed(2)} ${(base.y + side.y * sign * offset).toFixed(2)}`
-    return `M${at(hub, 1.25, 1)}L${at(tip, 0.2, 1)}L${at(tip, 0.2, -1)}L${at(hub, 1.25, -1)}Z`
-  })
-  const tone = createMemo(() => thinkingTone(props.options, props.current))
-  // The ring copies ProgressCircle's construction for the context icon one to one: viewBox 16, r 7, a 2px
-  // stroke, the grey track in `--v2-background-bg-layer-04`, the level arc in the option's tone with the
-  // same `circumference * (1 - fraction)` dash math, rotated so the arc starts where the needle starts. The
-  // one difference is the range: the context ring reads 0-100 over the full circle from the top, while the
-  // dial sweeps three quarters from the lower left, which leaves the gap where a real gauge has one.
-  const circumference = 2 * Math.PI * 7
-  // Size copies the context icon exactly — a 14px box — but dimming does not: only the track carries
-  // `opacity-50`, which is the part the two rings share. The arc and the needle stay at full strength, so a
-  // colour reads as itself; dimmed, even red-600 comes out dusty and never reads as red.
-  return (
-    <svg viewBox="0 0 16 16" class="size-4 shrink-0" aria-hidden="true">
-      <circle
-        cx="8"
-        cy="8"
-        r="7"
-        fill="none"
-        stroke="var(--v2-background-bg-layer-04)"
-        stroke-width="2"
-        opacity="0.5"
-      />
-      <circle
-        cx="8"
-        cy="8"
-        r="7"
-        fill="none"
-        stroke={tone()}
-        stroke-width="2"
-        stroke-dasharray={circumference.toString()}
-        stroke-dashoffset={(circumference * (1 - 0.75 * position().arc)).toString()}
-        transform="rotate(135 8 8)"
-      />
-      <path d={needle()} fill={tone()} />
-    </svg>
-  )
 }
 
 /** Dot start heights and pace multipliers across the 24px track. Negative delays start each dot mid-flight,
@@ -1186,13 +1125,12 @@ function ComposerEditorConfiguredSelect(props: {
   mobileDrawer?: boolean
   title: string
   keybind?: string[]
+  /** Names the trigger so a rule can key on it; aria-label is a translated string, not a hook. */
+  action?: string
   control: ComposerSelectControl
   model?: boolean
   class?: string
   caret?: boolean
-  indicator?: JSX.Element
-  /** Icon-only trigger: a 24px square, so the hover fill is a circle rather than a pill. */
-  round?: boolean
   /** Replaces the option list with custom menu content, for pickers that read as an instrument. */
   panel?: JSX.Element
   /** Extra class on the popover itself, for pickers that restyle their own window. */
@@ -1207,8 +1145,7 @@ function ComposerEditorConfiguredSelect(props: {
       title={props.title}
       class={props.class}
       caret={props.caret}
-      indicator={props.indicator}
-      round={props.round}
+      action={props.action}
       panel={props.panel}
       popoverClass={props.popoverClass}
       keybind={props.control.keybind?.() ?? props.keybind}
@@ -1232,12 +1169,10 @@ export function ComposerEditorSelect(props: {
   current: string
   currentIcon?: JSX.Element
   class?: string
-  /** The bar's chips read as one group; a caret on each would double the marks between them. */
+  action?: string
+  /** Both bar chips open a window, so both carry a caret; set false only for a trigger with another disclosure of its own. */
   caret?: boolean
-  /** Replaces the text label on the trigger, for a value that reads as a mark rather than a word. */
-  indicator?: JSX.Element
-  /** Icon-only trigger: a 24px square, so the hover fill is a circle rather than a pill. */
-  round?: boolean
+  /** A mark that leads the label, for a value that reads as a picture beside its name. */
   /** Replaces the option list with custom menu content, for pickers that read as an instrument. */
   panel?: JSX.Element
   /** Extra class on the popover itself, for pickers that restyle their own window. */
@@ -1263,11 +1198,9 @@ export function ComposerEditorSelect(props: {
   const content = () => (
     <>
       {props.currentIcon}
-      <Show when={!props.indicator} fallback={props.indicator}>
-        <span class="truncate capitalize leading-5">
-          {props.options.find((option) => option.id === props.current)?.label ?? props.current}
-        </span>
-      </Show>
+      <span class="truncate capitalize leading-5">
+        {props.options.find((option) => option.id === props.current)?.label ?? props.current}
+      </span>
       <Show when={props.caret ?? true}>
         <span class="-ms-0.5 -me-1 flex shrink-0">
           <Icon name="chevron-down" />
@@ -1295,8 +1228,9 @@ export function ComposerEditorSelect(props: {
               as={Button}
               variant="ghost-muted"
               size="normal"
-              class={`${props.round ? "composer-round-trigger" : "max-w-[220px] justify-start"} ![font-weight:440] ${props.class ?? ""}`}
+              class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
               aria-label={props.title}
+              data-action={props.action}
             >
               {content()}
             </Menu.Trigger>
@@ -1329,8 +1263,9 @@ export function ComposerEditorSelect(props: {
           }}
           variant="ghost-muted"
           size="normal"
-          class={`${props.round ? "composer-round-trigger" : "max-w-[220px] justify-start"} ![font-weight:440] ${props.class ?? ""}`}
+          class={`max-w-[220px] justify-start ![font-weight:440] ${props.class ?? ""}`}
           aria-label={props.title}
+          data-action={props.action}
           aria-haspopup="dialog"
           aria-expanded={store.open}
           onClick={() => setOpen(true)}

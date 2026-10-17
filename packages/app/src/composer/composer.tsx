@@ -101,9 +101,10 @@ function ComposerModelControl(props: {
               data-control-type="dialog"
               variant="ghost-muted"
               size="small"
-              // The chip sits in the tray with everything else rounded, and `small` pins a 4px radius at
-              // higher specificity than a plain utility would carry, so the override has to be important.
-              class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
+              // The chip takes the tray's contour from editor.css, which is unlayered and therefore beats
+              // the 4px radius `small` pins. A utility here would need `!rounded-full` to win that back,
+              // which splits one contour across two files.
+              class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
               classList={{ "animate-in fade-in": shouldAnimate() }}
               onClick={props.onUnpaidClick}
             >
@@ -119,7 +120,7 @@ function ComposerModelControl(props: {
                 {...triggerProps}
                 variant="ghost-muted"
                 size="small"
-                class="min-w-0 max-w-[220px] justify-start !rounded-full ![font-weight:440] group"
+                class="min-w-0 max-w-[220px] justify-start ![font-weight:440] group"
                 classList={{ "animate-in fade-in": shouldAnimate() }}
                 data-action="composer-model"
                 data-control-type={mobile() ? "drawer" : "popover"}
