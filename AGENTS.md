@@ -172,6 +172,38 @@ const table = sqliteTable("session", {
 - Run `bun run check` from the repository root as the canonical full lint and type-check verification.
 - During focused iteration, run `bun typecheck` from the affected package directory (for example, `packages/core`). Never run `tsc` directly.
 
+## The system prompt
+
+`packages/core/src/session/runner/prompt/system.txt` is what every session starts from. `system-prompt.ts`
+substitutes `${OPENCODE_TOOL_GUIDANCE}` with per-tool instructions, so the placeholder must survive verbatim — the
+replacement is a plain `String.replace`, and nothing validates that it fired.
+
+It is written as instructions to a person, not as a description of the harness. The earlier version opened by
+explaining what a harness was and how output renders; that is the shape to avoid, because a prompt that explains
+is a prompt that has no room left to command. Three rules carry the design and each exists because its absence
+was felt:
+
+- **Ask is the default, bounded by one test.** The answer changes what you do, so ask; it does not, so decide. The
+  bound matters as much as the rule: an unbounded "always ask" freezes the agent, and the user then has to ask
+  the agent to begin, which they stop doing. Asking has a cheaper form the agent must try first — take the
+  reversible path instead of asking (`git mv` over `rm`, a branch over a working copy), since a big repository
+  cannot be copied cheaply.
+- **Think wide, act narrow.** Initiative is allowed in words — propose, point out, name a better way — and
+  restricted in actions. Without that split, "touch only what the request needs" silences the agent entirely and
+  "make the project better" is unrestricted scope. The surgical rule also needs its exception: fixes the change
+  itself made necessary are part of the request.
+- **Say the outcome.** Plainly done when it is done; uncertain where it is uncertain, with a reason. "No hedging"
+  and "state what you are unsure of" contradict each other unless they are two sentences — the first is about the
+  result, the second about the gap in knowledge, and merging them hides the gap.
+
+Ask about anything irreversible that has no reversible equivalent, naming exactly what would be touched. Without
+that rule a request like "clean up this folder" is read literally and the agent deletes the folder.
+
+Craft rules — minimum code, nothing speculative, decide what proves it worked before starting — came from
+Andrej Karpathy's four guidelines; "never name a tool" from Cursor; honest reporting from Claude Code, which kept
+its reporting rules after cutting its entire tone section. Cursor's newer prompt is the counter-example: it
+mandates status narration between tool batches, which is the opposite of what a terminal user wants.
+
 ## Session Core
 
 - Keep durable events minimal: record irreducible new facts and do not repeat state derivable by folding the ordered aggregate history. Enrich projections and read models with previous or derived state when consumers need self-contained views.
