@@ -444,7 +444,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                     <Show when={control.options().length > 1}>
                       <ComposerEditorConfiguredSelect
                         mobileDrawer
-                        popoverClass="composer-effort-popover"
+                        popoverClass="menu-v2-squircle composer-effort-popover"
                         panel={
                           <ComposerEffortPanel
                             options={control.options()}
@@ -878,8 +878,12 @@ export function ComposerEditorAddMenu(props: {
           class="size-6 rounded-full"
         />
         <Menu.Portal>
+          {/* `min-w-5`, not `w-5`: the shortcut column sized to one character for `/`, `@` and `!`, and a
+              two-key hint like `Ctrl+U` overflowed its own box — visibly, while the window still had
+              `overflow: visible`, and then cut off the moment the window clipped. The column now takes what
+              the text needs and the menu's `min-width` decides the rest. */}
           <Menu.Content
-            class="[&_[data-slot=menu-v2-item-shortcut]]:w-5 [&_[data-slot=menu-v2-item-shortcut]]:justify-center"
+            class="menu-v2-squircle [&_[data-slot=menu-v2-item-shortcut]]:min-w-5 [&_[data-slot=menu-v2-item-shortcut]]:justify-end"
             style={{ "min-width": "180px" }}
           >
             <Menu.Item onSelect={props.onAttach} shortcut={props.attachShortcut}>
@@ -1251,7 +1255,7 @@ function ComposerEditorConfiguredSelect(props: {
       action={props.action}
       placement={props.placement}
       panel={props.panel}
-      popoverClass={props.popoverClass}
+      popoverClass={props.popoverClass ?? "menu-v2-squircle"}
       keybind={props.control.keybind?.() ?? props.keybind}
       options={props.control.options()}
       current={current()}

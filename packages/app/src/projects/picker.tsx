@@ -21,7 +21,6 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { pathKey } from "@/workspaces/path-key"
 import { handleDocumentSearchKeydown } from "@/shell/commands/search-keydown"
 import { createMenuDismissController } from "@/shell/commands/menu-dismiss"
-import "./picker.css"
 
 export type PromptProject = {
   name?: string
@@ -336,7 +335,7 @@ export function PromptProjectSelector(props: {
         <Menu.Content
           ref={contentRef}
           id="prompt-project-menu"
-          class="picker-menu w-[243px] overflow-hidden border-0 bg-v2-background-bg-layer-01 focus:outline-none [&[data-closed]]:!animate-none"
+          class="menu-v2-squircle w-[243px] overflow-hidden border-0 bg-v2-background-bg-layer-01 focus:outline-none [&[data-closed]]:!animate-none"
           onOpenAutoFocus={(event) => event.preventDefault()}
           onPointerDownOutside={dismiss.preventTriggerRestore}
           onFocusOutside={dismiss.preventTriggerRestore}

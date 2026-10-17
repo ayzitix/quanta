@@ -284,12 +284,25 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   `top-start` the window slid 24px every time the level changed. The trailing edge is the one edge the bar
   holds still. Do not "fix" this by giving the chip a fixed width instead: a shorter word then sits in a box
   padded out to the longest one, and the label has to truncate in every language with longer words.
-- The effort window is a squircle at 20px, not the menu's `--radius-md`. It is the tray's other face — the
-  window off the same control, carrying the same rim — so it should not be the only rounded-cornered thing in
-  the composer, and six pixels is too small for the curve to read at all: the shape would be there and
-  invisible. Its 20px is now its own number rather than a match to the tray's, which has come down to 10px
-  along with the squircle; the curve still reads at that radius on a box taller than the tray's one line. Its
-  `::before` rim needs `corner-shape: inherit` explicitly.
+- **One menu modifier, not a rule per window.** `menu-v2-squircle` in `packages/ui/src/navigation/menu/menu.css`
+  is the composer's window language: no elevation, a 20px squircle, the tray's 1px masked hairline rim, and rows
+  with **no radius and no inset** so the window's own curve draws their fills. Three changes travel together
+  because each is what makes the others work — the rim says "there is an edge here" without a shadow, the 20px
+  is the tray's other face rather than the menu's 6px, and the menu's 2px gutter is exactly what stops a fill
+  reaching the frame the curve has to clip. Giving each row the window's 20px is _not_ the fix: a middle row
+  rounded to 20px reads as a lozenge.
+- `overflow: hidden` is the rule the whole thing turns on. A curve can draw what reaches it but can only clip
+  what is inside its own box, and the menu's default is `visible` — so without it the square row fills ran past
+  the corners and a separator's negative margins stepped outside the frame entirely. That was "the elements
+  stick out": not a row misplaced, but a fill the window had no power to cut.
+- Everything that opens off the composer carries it: the agent picker (as `ComposerEditorSelect`'s default
+  `popoverClass`), the add menu, the effort window, and the project picker in `projects/picker.tsx`. The
+  effort window opts out of one part — `composer-effort-popover` restores `padding: 2px`, because its panel
+  carries its own `p-3` and the knob's travel is measured against the track's own box. It does not re-declare
+  the shape or the rim; those live with the modifier so two windows cannot drift apart.
+- The add menu's shortcut column is `min-w-5`, not `w-5`. `w-5` sized it for one character, which is right for
+  `/`, `@` and `!` and wrong for a two-key hint: `Ctrl+U` overflowed its own box — visibly while the window
+  still had `overflow: visible`, then cut off the moment the window clipped. Same defect, two symptoms.
 - The slider's `draft` is a **fraction of the scale**, not a stop index. `at()` returns the raw pointer
   position and only `nearest()` rounds it, so the knob tracks the cursor exactly while it is held. Rounding
   in `at()` made every stop a detent the knob jumped between, which is what "the slider is not smooth" felt

@@ -115,42 +115,13 @@
   corner-shape: squircle;
 }
 
-/* The effort popover is flat: the tray and the panel already carry their own hairlines and fills, so the
-   floating shadow the menu content brings would lift the instrument off the page. Scoped to this popover
-   only — every other menu keeps its elevation.
-
-   It is a squircle at the tray's own radius, because it is the tray's other face: the window that opens off
-   the same control, carrying the same rim, should not be the only rounded-cornered thing in the composer.
-   The menu default is `--radius-md` at 6px, which is too small for the curve to read at all — the shape
-   would be there and invisible. The rim below has to be told separately, since `corner-shape` does not
-   inherit. */
+/* The effort window takes the shared squircle menu language — flat, a 20px squircle, the tray's hairline rim —
+   and opts out of one part of it. It keeps the menu's 2px gutter because its panel carries its own `p-3` and
+   the knob's travel is measured against the track's own box, so removing the gutter would shift a window whose
+   geometry is already tuned without changing anything that reads better. The shape and rim are not repeated
+   here; they live with the rest of the menu modifier so no two windows can drift apart. */
 [data-component="menu-v2-content"].composer-effort-popover {
-  box-shadow: none;
-  position: relative;
-  border-radius: 20px;
-  corner-shape: squircle;
-}
-
-/* The effort popover's rim is the input tray's rim: the same 1px masked hairline, so the window reads as
-   part of the composer rather than a floating card. It repeats the tray rule instead of sharing a selector
-   because the popover carries no dock underlay and no focus glint. */
-[data-component="menu-v2-content"].composer-effort-popover::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  corner-shape: inherit;
-  padding: 1px;
-  background-color: var(--v2-border-border-muted);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
+  padding: 2px;
 }
 
 /* Drifting dots across the effort track, one keyframe paced per dot inline: a dot fades in just past the

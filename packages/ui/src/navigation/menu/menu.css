@@ -3,6 +3,56 @@
   z-index: 60;
 }
 
+/* A menu window in the squircle language: flat, a 20px squircle, and a 1px hairline rim.
+ *
+ * Three changes travel together because each one is what makes the other two work. The elevation goes first:
+ * a window that opens off a control already sitting on a surface should not also cast a shadow, and the rim
+ * below says "there is an edge here" on its own. Then the shape — 6px, the menu default, is too small for a
+ * curve to read at all, so the shape would be there and invisible. Then the gutter: the 2px padding is what
+ * stops a row's fill from ever reaching the frame, and a fill that stops short of the frame is exactly what
+ * the new shape cannot clip. So the padding goes and the rows go with it — radius 0 and no inset, letting the
+ * window's own curve draw them. Giving each row the window's 20px instead is not the fix: a middle row rounded
+ * to 20px reads as a lozenge.
+ *
+ * The rim is drawn rather than bordered because a border would take a pixel out of the box a row's height is
+ * measured against, and it has to be told `corner-shape` separately, which does not inherit. */
+[data-component="menu-v2-content"].menu-v2-squircle {
+  box-shadow: none;
+  position: relative;
+  padding: 0;
+  border-radius: 20px;
+  corner-shape: squircle;
+  /* The rule the whole thing turns on. A curve can only draw something that reaches it, but it can only
+     *clip* what is inside its own box — so the window's `overflow: visible` default let the square row fills
+     run past its corners and the separator's negative margins step outside it entirely. That is what "the
+     elements stick out" was: not a row misplaced, but a fill the window had no power to cut. */
+  overflow: hidden;
+}
+
+[data-component="menu-v2-content"].menu-v2-squircle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  corner-shape: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+[data-component="menu-v2-content"].menu-v2-squircle [data-component="menu-v2-item"] {
+  border-radius: 0;
+  margin-inline: 0;
+}
+
 [data-component="menu-v2-content"] {
   box-sizing: border-box;
   display: flex;
