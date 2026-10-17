@@ -103,26 +103,34 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
   `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
   height and hid the regression.
-- The tray's radius is `min(50%, 20px)`, not `rounded-full`, and its shape is `corner-shape: squircle`. A
-  percentage radius resolves against the box, so `rounded-full` is a 20px pill on the one-line tray and 90px on
-  the 180px maximum, where the semicircular ends swallow the start and end of every line. The 20px cap equals
-  half the one-line height, so changing that height means changing this number too — and it is also the
-  ceiling, because a corner radius clamps to half the box. A corner that hugs the frame the way the iOS one
-  does needs about 34px, hence a 68px tray, so **a 40px tray can only carry the tightest possible squircle**,
-  not the expressive one. This is a real constraint, not a preference to tune.
-- `corner-shape` does **not** inherit. The tray's `::before` rim and `::after` glint both need an explicit
-  `corner-shape: inherit`, or they draw circular hairlines on top of a squircle and the mismatch shows exactly
-  at the corners, where the eye goes first. Confirm with `getComputedStyle(tray, '::before').cornerShape` —
-  it reads `superellipse(1)` if the declaration was dropped.
-- The two 24px icon buttons take the tray's contour as well: `[data-action="composer-attach"]` and
+- The tray's radius is `10px`, and it carries no `corner-shape`. It is a field, not a capsule: the 20px that
+  `min(50%, 20px)` gave was exactly half the one-line height, which turns both ends into semicircles, so the
+  shape stopped reading as a rounded rectangle at all. A percentage radius was the wrong tool anyway — it
+  resolves against the box, so it is 20px on the 40px tray and 90px on the 180px maximum, where the ends
+  swallow the start and end of every line. The same 10px stays a visible corner at that maximum, so one number
+  serves both heights. Only the radius is here: the button insets derive from the tray's 40px height, not from
+  this, so changing it moves nothing else.
+- `corner-shape` does **not** inherit, so anything drawn over a squircle has to be told separately: the effort
+  window's `::before` rim needs an explicit `corner-shape: inherit`, or it draws a circular hairline on top of
+  a squircle and the mismatch shows exactly at the corners, where the eye goes first. The tray declares no
+  `corner-shape` at all, so its own `::before` rim and `::after` glint declare none — `inherit` there resolves
+  to the initial value and says nothing. Confirm with `getComputedStyle(el, '::before').cornerShape`: it reads
+  `superellipse(1)` where there is no squircle and `superellipse(2)` where there is one.
+- The two 24px icon buttons keep the squircle the tray gave up: `[data-action="composer-attach"]` and
   `[data-action="composer-submit"]` both get `corner-shape: squircle`, and their radius stays `rounded-full`,
-  which on a 24px box clamps to 12px — the same ceiling a squircle has there. So the shape changes and the
-  number does not. A squircle tray with two circular studs inside reads as two different languages; the fill
-  is what carries the shape, and the add button's open state inverts that fill on the same element, so it
-  follows the curve in both states.
+  which on a 24px box clamps to 12px — the same ceiling a squircle has there. The shape and the number are
+  independent here, and the buttons are the one place the composer still uses the curve, which is what keeps it
+  a deliberate language rather than an inconsistency with the tray. The fill is what carries the shape, and the
+  add button's open state inverts that fill on the same element, so it follows the curve in both states.
 - Both buttons are `size-6` (24px) inside the tray, at `start-2`/`end-2` and `bottom-2`. All three gaps are 8px:
   `(40 − 24) / 2`, and the horizontal inset matches so neither button is tighter to its edge than to the top and
-  bottom. Send is `arrow-up`, stop is `stop`.
+  bottom. Send is the catalog's `enter`, stop is `stop`.
+- Send carries no fill; it brightens its glyph instead, and only when it can act. `canSubmit` drives the
+  button's `disabled`, so `editor.css` gives it `--v2-text-text-base` when there is something to send and
+  `--v2-text-text-muted` when there is not. The mark is the highlight. The white inverse fill it used to have
+  made it the one solid shape in a tray of outlines, and moving that fill behind a content check still claimed
+  an armed button over an empty field. The stop state hangs off `data-stopping` rather than a
+  `text-v2-state-fg-danger` utility, because the two rules above are unlayered and would outrank it.
 - The tray's leading text padding is `ps-11` (44px), which clears a 24px add button sitting 8px in: `8 + 24 + 12`.
   The placeholder overlay carries the same padding on its own `absolute` layer and does **not** inherit the
   contenteditable's — when the two disagree the hint slides under the add button. The trailing side is measured,
@@ -172,15 +180,20 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   is a prop, not state: the generic composer renders whatever the caller passes and knows nothing about sessions.
 - Chips take the tray's contour from `editor.css`, not from their own variant: radius **and** shape. Every
   button variant carries a small circular radius, which reads as a square block pasted into the tray the moment
-  it takes the hover fill, and a circular hover fill inside a squircle tray is the pairing that looks like an
-  accident. The rule is unlayered for the same reason the glint is, which also means it beats the variant's own
-  radius — `button.css` sits in `@layer components` — so **no chip needs `!rounded-full`**. The model chip is
-  the one that looks like it does: it is inside the text tray rather than a bar tray, so it needs its own hook
-  (`[data-component="composer"] [data-action="composer-model"]`) to reach the same rule.
-- Colour on these controls cannot come from Tailwind classes. `icon-button.css` and `button.css` set
-  `background-color` and `color` on the button itself at (0,2,0), which outranks every colour utility at (0,1,0)
-  — a class on the trigger silently does nothing and the control stays transparent. `editor.css` owns those
-  colours at (0,4,0) instead, and excludes the open state so the inverse rule still owns it.
+  it takes the hover fill, and a circular hover fill against the squircle the chips themselves carry is the
+  pairing that looks like an accident. The rule is unlayered for the same reason the glint is, which also
+  means it beats the variant's own radius — `button.css` sits in `@layer components` — so **no chip needs
+  `!rounded-full`**. The model chip is the one that looks like it does: it is inside the text tray rather than
+  a bar tray, so it needs its own hook (`[data-component="composer"] [data-action="composer-model"]`) to reach
+  the same rule.
+- `editor.css` is **unlayered**, and that is the only reason colour belongs there rather than on the trigger:
+  unlayered rules beat every `@layer`, Tailwind's `utilities` included. The direction is worth stating because
+  it is easy to get backwards — a colour utility **does** beat `icon-button.css`'s own `color`, since that file
+  sits in `@layer components` and `utilities` is declared after it. Verified rather than assumed: adding
+  `text-v2-state-fg-danger` to an untouched `ghost-muted` icon button turns it from `#666666` to `#f70a6a`.
+  So a class on the trigger is fine on its own and stops working the moment `editor.css` declares the same
+  property for that element. The open state is excluded from the attach rule for that reason, and the send
+  button's three states are all declared here rather than split between a class and a stylesheet.
 - Both bar chips carry a caret. They are the only disclosure-looking controls in the row, and two marks without
   carets read as readouts you cannot open. It was the reverse once and both marks sat shoulder to shoulder
   looking inert.
@@ -210,10 +223,12 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   `top-start` the window slid 24px every time the level changed. The trailing edge is the one edge the bar
   holds still. Do not "fix" this by giving the chip a fixed width instead: a shorter word then sits in a box
   padded out to the longest one, and the label has to truncate in every language with longer words.
-- The effort window is a squircle at the tray's own 20px radius, not the menu's `--radius-md`. It is the
-  tray's other face — the window off the same control, carrying the same rim — so it should not be the only
-  rounded-cornered thing in the composer. Six pixels is too small for the curve to read at all: the shape
-  would be there and invisible. Its `::before` rim needs `corner-shape: inherit` explicitly.
+- The effort window is a squircle at 20px, not the menu's `--radius-md`. It is the tray's other face — the
+  window off the same control, carrying the same rim — so it should not be the only rounded-cornered thing in
+  the composer, and six pixels is too small for the curve to read at all: the shape would be there and
+  invisible. Its 20px is now its own number rather than a match to the tray's, which has come down to 10px
+  along with the squircle; the curve still reads at that radius on a box taller than the tray's one line. Its
+  `::before` rim needs `corner-shape: inherit` explicitly.
 - The slider's `draft` is a **fraction of the scale**, not a stop index. `at()` returns the raw pointer
   position and only `nearest()` rounds it, so the knob tracks the cursor exactly while it is held. Rounding
   in `at()` made every stop a detent the knob jumped between, which is what "the slider is not smooth" felt

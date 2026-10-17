@@ -25,18 +25,16 @@
   );
 }
 
-/* Squircle at the one-line height, capped so a tall tray does not turn into a lozenge. A percentage radius
-   resolves against the box, so 50% is 20px on a 40px tray and 90px on the 180px maximum, where the
-   semicircular ends swallow the start and end of every line. The cap matches the one-line tray, so raising
-   that height is the one edit that moves this number too.
+/* A field, not a capsule. 10px on a 40px tray is a corner that is soft but still a corner; the 20px that
+   `min(50%, 20px)` gave was exactly half the height, which turns both ends into semicircles — the shape
+   stopped reading as a rounded rectangle at all. The tray has been a squircle, then a pill, and this is the
+   one that reads as a field at both heights it has to work at: the same number stays a visible corner on the
+   180px maximum, where a percentage radius would have ballooned to 90px and swallowed the ends of every line.
 
-   `corner-shape` is what makes this a squircle rather than a pill. A corner radius resolves against half the
-   box, so 20px is also the ceiling here — this is the fullest squircle a 40px tray can carry, and a corner
-   that hugs the box like the iOS one needs about 34px, hence a 68px tray. It does not inherit, so the two
-   pseudo-elements below have to ask for it explicitly or the rim draws a circle on top of a squircle. */
+   Only the radius is here, so the button insets, which are derived from the tray's 40px height, are
+   untouched. The controls inside keep their own contour. */
 [data-component="composer"] {
-  border-radius: min(50%, 20px);
-  corner-shape: squircle;
+  border-radius: 10px;
 }
 
 /* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
@@ -48,7 +46,6 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  corner-shape: inherit;
   padding: 1px;
   background-color: var(--v2-border-border-muted);
   -webkit-mask:
@@ -220,6 +217,30 @@
   color: var(--v2-text-text-muted);
 }
 
+/* Send is the one mark in the tray whose weight depends on whether it can act. `canSubmit` drives the
+   button's `disabled`, so an empty composer dims the glyph to the row's resting tone and a typed one brings
+   it up to full text weight — the mark itself is the highlight, not a fill behind it. A send button that
+   looked armed over an empty field was telling the user it had something to send before it did.
+
+   These live here rather than on the trigger because this file is unlayered, and unlayered beats every
+   `@layer` — including Tailwind's `utilities`, which is where a colour class would go. That is the whole
+   reason the stop state below needs an attribute: once the armed and empty colours are declared here, a
+   `text-v2-state-fg-danger` utility on the trigger loses to both of them and the stop mark comes out in the
+   resting tone. Keeping all three in one file keeps that true by construction. Note the direction of the
+   cascade, because it is easy to get backwards: a colour utility does beat `icon-button.css`'s own `color`
+   (verified — adding `text-v2-state-fg-danger` to an untouched `ghost-muted` icon button turns it pink). */
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"] {
+  color: var(--v2-text-text-base);
+}
+
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:disabled {
+  color: var(--v2-text-text-muted);
+}
+
+[data-action="composer-submit"][data-stopping] {
+  color: var(--v2-state-fg-danger);
+}
+
 [data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"][data-expanded] {
   color: var(--v2-text-text-base);
 }
@@ -274,7 +295,6 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  corner-shape: inherit;
   padding: 1px;
   background-image: conic-gradient(
     from var(--composer-glint-angle),

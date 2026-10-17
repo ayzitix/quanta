@@ -1591,19 +1591,25 @@ export function ComposerEditorSubmitButton(props: {
     >
       <IconButton
         data-action="composer-submit"
+        // The hook editor.css keys the stop state's colour off. Its danger foreground is no longer a class,
+        // because editor.css is unlayered and outranks every utility: the armed and empty colours declared
+        // there would both beat a `text-v2-state-fg-danger` on the trigger and the stop mark would come out in
+        // the resting tone.
+        data-stopping={props.stopping || undefined}
         type="button"
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
-        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />}
+        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
         variant="ghost"
         class="size-6 rounded-full p-1"
         classList={{
-          // Mutually exclusive keys rather than a base colour the stop state overrules: two background
-          // utilities in one cascade position it on stylesheet order, not on intent.
-          "bg-v2-background-bg-inverse text-v2-text-text-inverse": !props.stopping,
-          // A translucent wash of the danger foreground, not state-bg-danger: that token resolves to
-          // red-1200 in dark, which reads as near-black rather than a red control.
-          "bg-v2-state-fg-danger/20 text-v2-state-fg-danger": props.stopping,
+          // Only the stop state carries a fill. Send used to invert to near-white, which made this the one
+          // solid mark in a tray that is otherwise outlines — it read as a second, more important control
+          // sitting in the field. It now brightens its glyph instead, and only once there is something to
+          // send, so the tray keeps its resting weight until the field means it. The wash is
+          // `state-fg-danger` and not `state-bg-danger`: the latter resolves to red-1200 in dark, which reads
+          // as near-black rather than as a red control.
+          "bg-v2-state-fg-danger/20": props.stopping,
         }}
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
