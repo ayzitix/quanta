@@ -89,6 +89,23 @@
   corner-shape: squircle;
 }
 
+/* Three more controls carry the hover fill and so need the contour named, because none of them sits in a slot
+   the rules above can reach. The two in the tray are its text buttons — exit-shell and the delivery-mode
+   toggle — which the variant gives a 6px radius, so the pill and the curve are both set here. The project
+   picker is a component button from the new-session stack, out here at 28px with a 4px radius: it was the one
+   control in the composer whose hover fill read as a plain rounded rectangle next to a squircle chip, which
+   is what makes a set of controls look like a set that was not designed together.
+
+   Declared here rather than on the feature's own classes because this file is unlayered and outranks them,
+   and because the radius has to move with the curve — one is the other's consequence at this size, and
+   splitting them across two files is how they drift apart. */
+[data-action="composer-exit-shell"],
+[data-action="composer-alternate-delivery"],
+[data-action="prompt-project"] {
+  border-radius: 9999px;
+  corner-shape: squircle;
+}
+
 /* The two 24px icon buttons take the tray's contour too, so the shapes inside it are one language rather
    than a squircle tray with two round studs. Their radius stays `rounded-full`: on a 24px box that clamps to
    12px, which is also the ceiling a squircle has here, so the shape changes without the number moving. The

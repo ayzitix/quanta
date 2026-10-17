@@ -185,7 +185,13 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   means it beats the variant's own radius — `button.css` sits in `@layer components` — so **no chip needs
   `!rounded-full`**. The model chip is the one that looks like it does: it is inside the text tray rather than
   a bar tray, so it needs its own hook (`[data-component="composer"] [data-action="composer-model"]`) to reach
-  the same rule.
+  the same rule. Three more controls take the hover fill and so need the contour named, because no slot hook
+  reaches them: `[data-action="composer-exit-shell"]` and `[data-action="composer-alternate-delivery"]`, the
+  tray's two text buttons, and `[data-action="prompt-project"]`, the new-session project picker. That last one
+  was 28px at a 4px radius, so its hover fill read as a plain rounded rectangle sitting beside a squircle chip —
+  one control out of step is what makes a set look undesigned rather than composed. Set radius and shape in the
+  same rule: at these sizes the radius is a consequence of the curve, and splitting the pair across two files
+  is how they drift apart.
 - `editor.css` is **unlayered**, and that is the only reason colour belongs there rather than on the trigger:
   unlayered rules beat every `@layer`, Tailwind's `utilities` included. The direction is worth stating because
   it is easy to get backwards — a colour utility **does** beat `icon-button.css`'s own `color`, since that file
