@@ -327,7 +327,7 @@ export function ActiveSessionComposerRegion(props: {
                     sentence qualifies rather than the instrument cluster configures. The bar below is
                     inputs — agent, model, thinking power — and a location is none of those. */}
                 <div class="flex flex-col gap-2">
-                  <SessionContextRow session={props.session} />
+                  <SessionContextRow session={props.session} onDone={() => props.model.composer.restoreFocus()} />
                   <Composer
                     model={props.model.composer}
                     borderUnderlay

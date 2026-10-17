@@ -1,10 +1,10 @@
 import { describe, expect, mock, test } from "bun:test"
 import { createRoot } from "solid-js"
-import type { PromptProjectControls } from "./selector"
+import type { PromptProjectControls } from "./picker"
 
 mock.module("@/runtime/i18n/language", () => ({ useLanguage: () => ({ t: (key: string) => key }) }))
 
-const { createPromptProjectController } = await import("./selector")
+const { createPromptProjectController } = await import("./picker")
 
 describe("new session project selection", () => {
   test("shows the current project's appearance before its worktree inventory loads", () => {

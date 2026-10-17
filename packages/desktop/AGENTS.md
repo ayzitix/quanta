@@ -103,14 +103,29 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   and sit marooned in the middle of an otherwise left-weighted stack. The gap to the tray is 8px: these are the
   tray's header, not a section of their own. It lives in `new-session/view.tsx` above `<Composer>`, and in a
   session in `session/composer/session-context-row.tsx` above the same element in `session/composer/region.tsx`.
-- The session's row is **read-only**, and that is the whole reason it is not the draft's selectors. A session is
-  bound to its location: switching the worktree mid-conversation would not move the session, only the next one,
-  so a picker there would promise something it cannot deliver, and a `disabled` picker is worse — a control that
-  looks live and refuses. It renders `@opencode/ui`'s `ProjectAvatar` primitives rather than importing the
-  new-session selectors, because that module owns the _draft_ project controller whose callbacks mean nothing
-  once a session exists. Branch comes from `data.location.vcs.info({ directory })`, keyed on the project's
-  worktree — the same directory `session/timeline/message-timeline.tsx` already syncs, so the row does not start
-  a sync of its own. Measured: the row's left edge equals the tray's to within 1.5px, and it sits 8px above it.
+- The draft's row is the project picker. The session's row is the project picker and nothing else: worktree and
+  branch were both there and both went, because they duplicated what the session header already states, and three
+  labels where one decision is made read as a status readout nobody asked for. Choosing a project opens a **new**
+  session in it and leaves the current one alone — a session is bound to its location, so "switching" could only
+  mean the next one, and starting another is the honest version of the gesture. Projects come from that session's
+  server alone; another server's would mean a draft on a different connection, which is the home screen's job.
+- The picker window moved to `projects/picker.tsx` and is shared, so a session does not import from
+  `new-session/`. Only its controls differ, through `PromptProjectControls` (`available`, `directory`, `select`,
+  `add`) — the window, the controller, the search, the add-folder action and the item treatment are one control
+  in two places rather than two controls that drift. Its `placement` is **upward** (`top-start`) in a session,
+  because that trigger sits close to the bottom edge, and `bottom` in the draft, whose row is high enough for it.
+- The picker window is styled by `projects/picker.css`, and it follows the composer's window language rather than
+  the menu's: no elevation, a 20px squircle, and the tray's 1px masked hairline for its rim. Its rows carry **no**
+  radius and **no** inset, because the window's squircle is what has to shape their fill, and a shape can only do
+  that to something that reaches the edge — that also means the window's own `padding: 0` overrides the menu
+  default's 2px, or every fill stops short of the frame and the squircle has nothing to clip. Replacing each row's
+  radius with the window's 20px is not the fix: a middle row rounded to 20px reads as a lozenge.
+- The project trigger shows the name alone, no avatar. It states which project, and the tile repeats what the
+  word says while costing a rounded block in a row that is otherwise text. The avatar still earns its place on
+  each item in the window, where it tells several projects apart.
+- The context ring in the bar is the `session.composer.bar` slot's content, and it is **14px**, not the 16px the
+  figures variant uses. At 16 it filled its 28px tray exactly, the one mark in the row with no air around it. The
+  size is keyed on `iconOnly` because that prop marks the bar's instance alone, so no other consumer moves.
 - Keep the bar outside the form. The add menu, agent and model controls used to sit inside the form next to the
   submit button; that gave the tray a second full row and made it roughly twice its intended height while looking
   like a one-line input.

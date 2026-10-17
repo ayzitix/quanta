@@ -1,0 +1,54 @@
+/* The project picker's window, in the composer's language rather than the menu's.
+ *
+ * Flat: it opens off a control that sits in the composer, so a drop shadow reads as a different kind of thing
+ * from the surface that summoned it — the tray and this window already carry their own hairlines and fills, and
+ * a shadow on top of those says "floating card" twice. The elevation the menu content brings by default is
+ * removed rather than softened; there is nothing here worth casting one.
+ *
+ * Squircle at 20px, the effort window's radius and shape. This window is the tray's other face in the same way
+ * that panel is, so the two match; the menu default is `--radius-md` at 6px, which is too small for the curve to
+ * read at all — the shape would be there and invisible. The rim has to be drawn separately because
+ * `corner-shape` does not inherit, and drawn as a masked hairline rather than a border for the same reason the
+ * tray draws one that way: a real border would take a pixel out of the box the scroll area is measured against.
+ */
+[data-component="menu-v2-content"].picker-menu {
+  box-shadow: none;
+  position: relative;
+  border-radius: 20px;
+  corner-shape: squircle;
+  /* The menu default pads its content by 2px. That inset is what stops a row's fill from ever reaching the
+     frame, and a fill that stops short of the frame is what the squircle then cannot shape. Text keeps its own
+     inset from the rows' own `px-3` and the search field's `pl-3`; only the surface goes edge to edge. */
+  padding: 0;
+}
+
+[data-component="menu-v2-content"].picker-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  corner-shape: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Rows carry no contour and no inset of their own, because the window's squircle is what has to shape their
+   fill — and a shape can only do that to something that reaches the edge. A 4px inset row with its own 4px
+   radius sitting inside a 20px squircle reads as a second, smaller shape drawn on the first: its corners appear
+   inside the window's corners, and at the foot of the list that is exactly where the eye lands. Letting the
+   fill run edge to edge and clipping it against the window turns every row into part of one surface.
+   The row's own radius is not replaced by the window's 20px either — a middle row rounded to 20px reads as a
+   lozenge, so the rows are square and the window does the shaping. */
+[data-component="menu-v2-content"].picker-menu [data-component="menu-v2-item"] {
+  border-radius: 0;
+  margin-inline: 0;
+}

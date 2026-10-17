@@ -1,4 +1,4 @@
-import { createPromptProjectController } from "@/new-session/project/selector"
+import { createPromptProjectController } from "@/projects/picker"
 import { useSettingsSurface } from "@/settings/surface"
 import { useTabs, type DraftTab } from "@/shell/tabs/tabs"
 import { useSettingsServers } from "@/settings/servers/inventory"

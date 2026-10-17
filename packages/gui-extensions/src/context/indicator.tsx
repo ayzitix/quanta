@@ -115,9 +115,13 @@ export function SessionContextUsage(props: {
           override hooks: compact pins both strokes to fixed tokens, so dimming the whole element would also dim
           the fill the user needs to read. A faint track with a solid arc keeps the widget quiet and the level
           legible at the same time. */}
+      {/* The bar's ring is an icon in a 28px tray beside chips that carry text, and at 16px it filled its
+          cell exactly — the one mark in the row with no air around it. Two pixels off puts the circle inside
+          the tray the way the chips sit inside theirs, without shrinking it into illegibility. Scoped to
+          `iconOnly` because the figures variant shows the number beside the ring and wants the larger one. */}
       <ProgressCircle
         appearance={props.iconOnly ? "indicator" : "compact"}
-        size={16}
+        size={props.iconOnly ? 14 : 16}
         strokeWidth={props.iconOnly ? 2 : undefined}
         percentage={context()?.usage ?? 0}
         style={

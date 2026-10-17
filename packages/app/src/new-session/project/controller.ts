@@ -6,7 +6,7 @@ import { serverName, ServerConnection, useServers } from "@/runtime/server/regis
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { workspaceSelectionDestination } from "@/workspaces/paths"
 import { useTabs } from "@/shell/tabs/tabs"
-import type { PromptProjectControls } from "./selector"
+import type { PromptProjectControls } from "@/projects/picker"
 
 export function createComposerProjectControls(props: { draftId: string; worktree: () => string }) {
   const servers = useServers()

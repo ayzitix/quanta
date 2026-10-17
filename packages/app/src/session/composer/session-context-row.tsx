@@ -1,72 +1,64 @@
-import { createMemo, Show } from "solid-js"
-import { Icon } from "@opencode/ui/icon"
-import { Tooltip } from "@opencode/ui/tooltip"
-import {
-  displayName,
-  getProjectAvatarSource,
-  getProjectAvatarVariant,
-  ProjectAvatar,
-} from "@opencode/ui/project-avatar"
-import { getFilename } from "@opencode/util/path"
+import { createMemo } from "solid-js"
+import { useDirectoryPicker } from "@/workspaces/selection/picker"
+import { useServer } from "@/runtime/server/current"
+import { useTabs } from "@/shell/tabs/tabs"
+import { createPromptProjectController, PromptProjectSelector } from "@/projects/picker"
+import type { PromptProjectControls } from "@/projects/picker"
 import type { SessionModel } from "../model"
 
 /**
- * Where this session runs, read-only, above the tray.
+ * Which project this session runs in, above the tray.
  *
- * The same three facts the draft composer names before a session exists — project, worktree, branch — carried
- * through the conversation rather than dropped the moment the first message is sent. They stay labels here
- * because a session is already bound to its location: switching the worktree mid-conversation would not move
- * the session, only the next one, so a picker would promise something it cannot deliver. `disabled` would be
- * worse, a control that looks live and refuses.
+ * The draft composer names the project before a session exists; this keeps it live for the whole conversation
+ * rather than locking it the moment the first message is sent. Sitting above the tray and hung off its leading
+ * edge is where the draft puts it too — it is the sentence's own furniture, not a status line for the panel.
+ * The window opens **upward**: a trigger this close to the bottom edge has no room below it.
  *
- * No dependency on the new-session feature. It renders the same primitives from `@opencode/ui` rather than
- * importing its selectors, because that module owns the *draft* project's controller and its callbacks mean
- * nothing once a session exists.
+ * It reuses the draft's own picker window, so search, the add-folder action and the item treatment are one
+ * control in two places rather than two controls that drift. Only the controls behind it differ.
+ *
+ * Choosing a project opens a **new** session in it and leaves this one alone. A session is bound to its
+ * location, so "switching" here could only mean the next one — starting another is the honest version of the
+ * same gesture. Unlocking the row is still worth it: the user can see and change where the next session runs
+ * without leaving the conversation they are in.
+ *
+ * Projects come from this session's server alone. Another server's projects would mean a draft on a different
+ * connection, which is what the home screen and titlebar are for; a composer control that silently crosses
+ * connections is a worse answer than a shorter list.
  */
-export function SessionContextRow(props: { session: SessionModel }) {
-  const data = props.session.shared.data
-  // The worktree the timeline already syncs VCS for, so the branch below resolves from data the session view
-  // is already fetching rather than starting a sync of its own.
+export function SessionContextRow(props: { session: SessionModel; onDone: () => void }) {
+  const server = useServer()
+  const tabs = useTabs()
+  const pickDirectory = useDirectoryPicker()
   const directory = createMemo(() => props.session.project()?.worktree ?? props.session.workspace.directory())
   const project = createMemo(() => props.session.project())
-  const branch = createMemo(() => data.location.vcs.info({ directory: directory() })?.branch.current)
-  const worktree = createMemo(() => getFilename(directory()) || directory())
+  const openDraft = (worktree: string) => void tabs.newDraft({ server: server.key, directory: worktree }, "")
+
+  const controller = createPromptProjectController({
+    onDone: props.onDone,
+    controls: () =>
+      ({
+        available: server.ctx.projects.list(),
+        directory: directory(),
+        projectID: project()?.id,
+        select: openDraft,
+        add: (title: string) => {
+          pickDirectory({
+            server: server.conn,
+            title,
+            onSelect: (result) => {
+              const picked = Array.isArray(result) ? result[0] : result
+
+              if (picked) openDraft(picked)
+            },
+          })
+        },
+      }) satisfies PromptProjectControls,
+  })
 
   return (
-    <div
-      data-component="session-context-row"
-      class="flex min-h-7 min-w-0 flex-row flex-wrap items-center justify-start gap-0 text-v2-text-text-faint"
-    >
-      <div class="flex h-7 min-w-0 max-w-[203px] items-center gap-1.5 px-1.5">
-        <ProjectAvatar
-          fallback={displayName(project() ?? { worktree: directory() })}
-          src={getProjectAvatarSource(project()?.id, project()?.icon)}
-          variant={getProjectAvatarVariant(project()?.icon?.color)}
-        />
-        <Tooltip placement="top" value={displayName(project() ?? { worktree: directory() })} disabled>
-          <span class="min-w-0 truncate leading-5">{displayName(project() ?? { worktree: directory() })}</span>
-        </Tooltip>
-      </div>
-      <Show when={branch()}>
-        <span class="px-0.5 leading-none text-v2-text-text-faint">/</span>
-        <div class="flex h-6 min-w-0 max-w-[203px] items-center gap-1.5 px-1.5">
-          <Icon name="monitor" size="small" class="shrink-0 text-v2-icon-icon-muted" />
-          <Tooltip placement="top" value={worktree()} disabled={worktree().length <= 24}>
-            <span class="min-w-0 truncate leading-5">{worktree()}</span>
-          </Tooltip>
-        </div>
-      </Show>
-      <Show when={branch()}>
-        <div
-          data-slot="session-context-branch"
-          class="ms-1 flex h-6 min-w-0 max-w-[220px] items-center gap-1.5 rounded-full bg-v2-background-bg-layer-02 px-2.5 text-[13px] leading-5 text-v2-text-text-faint"
-        >
-          <Icon name="branch" size="small" class="shrink-0 text-v2-icon-icon-muted" />
-          <Tooltip placement="top" value={branch()!} disabled>
-            <span class="min-w-0 truncate">{branch()}</span>
-          </Tooltip>
-        </div>
-      </Show>
+    <div data-component="session-context-row" class="flex min-w-0 flex-row items-center text-v2-text-text-faint">
+      <PromptProjectSelector controller={controller} placement="top-start" />
     </div>
   )
 }

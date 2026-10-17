@@ -21,6 +21,7 @@ import { useLanguage } from "@/runtime/i18n/language"
 import { pathKey } from "@/workspaces/path-key"
 import { handleDocumentSearchKeydown } from "@/shell/commands/search-keydown"
 import { createMenuDismissController } from "@/shell/commands/menu-dismiss"
+import "./picker.css"
 
 export type PromptProject = {
   name?: string
@@ -220,7 +221,8 @@ export type PromptProjectController = ReturnType<typeof createPromptProjectContr
 
 export function PromptProjectSelector(props: {
   controller: PromptProjectController
-  placement?: "bottom" | "bottom-start"
+  /** `top` for a trigger that sits near the bottom edge, where a downward window runs off the viewport. */
+  placement?: "top" | "top-start" | "bottom" | "bottom-start"
 }) {
   const [triggerReady, setTriggerReady] = createSignal(false)
   let contentRef: HTMLDivElement | undefined
@@ -334,7 +336,7 @@ export function PromptProjectSelector(props: {
         <Menu.Content
           ref={contentRef}
           id="prompt-project-menu"
-          class="w-[243px] overflow-hidden rounded-md border-0 bg-v2-background-bg-layer-01 shadow-[var(--v2-elevation-floating)] focus:outline-none [&[data-closed]]:!animate-none"
+          class="picker-menu w-[243px] overflow-hidden border-0 bg-v2-background-bg-layer-01 focus:outline-none [&[data-closed]]:!animate-none"
           onOpenAutoFocus={(event) => event.preventDefault()}
           onPointerDownOutside={dismiss.preventTriggerRestore}
           onFocusOutside={dismiss.preventTriggerRestore}
@@ -535,18 +537,10 @@ function ProjectTrigger(props: ComponentProps<"button"> & { controller: PromptPr
         if (typeof local.onKeyDown === "function") local.onKeyDown(event)
       }}
     >
-      <Show
-        when={project()}
-        fallback={<Icon name="folder-add-left" size="small" class="shrink-0 text-v2-icon-icon-muted" />}
-      >
-        {(item) => (
-          <ProjectAvatar
-            fallback={displayName(item())}
-            src={getProjectAvatarSource(item().id, item().icon)}
-            variant={getProjectAvatarVariant(item().icon?.color)}
-          />
-        )}
-      </Show>
+      {/* Name only. The trigger states which project, and an avatar beside that name repeats what the word
+          already says while costing a rounded tile of its own — the row this lives in is otherwise text, and
+          the tile read as a second control. The avatar still earns its place on each item in the window, where
+          it tells several projects apart at a glance. */}
       <span class="min-w-0 truncate leading-5">
         {project() ? displayName(project()!) : local.controller.labels.new()}
       </span>

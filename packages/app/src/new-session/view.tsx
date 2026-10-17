@@ -12,7 +12,7 @@ import {
   PromptProjectAddButton,
   PromptProjectSelector,
   type PromptProjectController,
-} from "@/new-session/project/selector"
+} from "@/projects/picker"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useProviders } from "@/providers/catalog/providers"
