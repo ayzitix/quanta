@@ -103,10 +103,18 @@
 
 /* The effort popover is flat: the tray and the panel already carry their own hairlines and fills, so the
    floating shadow the menu content brings would lift the instrument off the page. Scoped to this popover
-   only — every other menu keeps its elevation. */
+   only — every other menu keeps its elevation.
+
+   It is a squircle at the tray's own radius, because it is the tray's other face: the window that opens off
+   the same control, carrying the same rim, should not be the only rounded-cornered thing in the composer.
+   The menu default is `--radius-md` at 6px, which is too small for the curve to read at all — the shape
+   would be there and invisible. The rim below has to be told separately, since `corner-shape` does not
+   inherit. */
 [data-component="menu-v2-content"].composer-effort-popover {
   box-shadow: none;
   position: relative;
+  border-radius: 20px;
+  corner-shape: squircle;
 }
 
 /* The effort popover's rim is the input tray's rim: the same 1px masked hairline, so the window reads as
@@ -117,6 +125,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
+  corner-shape: inherit;
   padding: 1px;
   background-color: var(--v2-border-border-muted);
   -webkit-mask:

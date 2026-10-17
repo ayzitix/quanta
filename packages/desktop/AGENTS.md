@@ -210,11 +210,27 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   `top-start` the window slid 24px every time the level changed. The trailing edge is the one edge the bar
   holds still. Do not "fix" this by giving the chip a fixed width instead: a shorter word then sits in a box
   padded out to the longest one, and the label has to truncate in every language with longer words.
-- The slider commits on release, not on every pointer move. While the pointer is down the panel follows a local
-  `draft` index — the knob, the fill and the header readout all read `draft() ?? selected()` — and
-  `onSelect` fires once in `onPointerUp`. `onPointerCancel` drops the draft and commits nothing: a cancelled
-  drag is a gesture the user took back. Keyboard stepping still commits immediately, since no drag is
-  involved. Committing per `pointermove` relabelled the tray chip under the open panel on every pixel.
+- The effort window is a squircle at the tray's own 20px radius, not the menu's `--radius-md`. It is the
+  tray's other face — the window off the same control, carrying the same rim — so it should not be the only
+  rounded-cornered thing in the composer. Six pixels is too small for the curve to read at all: the shape
+  would be there and invisible. Its `::before` rim needs `corner-shape: inherit` explicitly.
+- The slider's `draft` is a **fraction of the scale**, not a stop index. `at()` returns the raw pointer
+  position and only `nearest()` rounds it, so the knob tracks the cursor exactly while it is held. Rounding
+  in `at()` made every stop a detent the knob jumped between, which is what "the slider is not smooth" felt
+  like: the pointer moves and the knob is somewhere else for most of it. Snapping happens on release —
+  `onSelect` fires once in `onPointerUp` with `stops()[nearest(draft)]`. Keyboard stepping stays on whole
+  stops and commits immediately, since no drag is involved.
+- `onPointerCancel` drops the draft and commits nothing: a cancelled drag is a gesture the user took back.
+  Committing per `pointermove` instead relabelled the tray chip under the open panel on every pixel, and the
+  chip is content-width, so its leading edge moved with the word.
+- What the level _reads_ and what it _commits_ are deliberately separate. The fill's colour and the dot pace
+  come from `preview()` — the stop the knob is currently on — so both move while the drag is still a
+  question; only `onSelect` waits for release. Reading `props.current` for the colour is what made the slider
+  look inert: nothing on it changed until the drag was already over.
+- The green floor of the scale is a lime mixed in oklab from `green-800` and `yellow-700`, not
+  `--v2-state-fg-success`. That token is the app's "this worked" green, and on a dial it read as a status
+  rather than as a level running cool. The palette has no lime, so it is mixed from the two hues bracketing
+  it rather than hardcoding a hex a custom theme would contradict — and `color-mix` keeps it theme-aware.
 - The effort dots peak at `opacity: 0.5` in `@keyframes composer-effort-dot`, not in the element: the
   animation animates `opacity`, so an element-level value would be overwritten on every frame. At full
   strength seven dots crossing a 24px track read as debris rather than as motion.

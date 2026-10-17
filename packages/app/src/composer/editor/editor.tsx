@@ -933,9 +933,15 @@ function thinkingTone(options: ComposerOption[], current: string) {
   // stop that reads as red on a dark surface, and the step below it is red-700 so the two highest levels
   // stay distinguishable. Bands rather than per-index colours, so the order always reads as one
   // progression no matter how many options the model declares.
+  //
+  // The floor is a lime rather than the success token. `--v2-state-fg-success` is the app's "this worked"
+  // green, and using it here made the weakest level look like a status; the scale wants the colour of a
+  // dial running cool. The palette has no lime, so it is mixed from the two hues that bracket it — a dark
+  // green pulled toward yellow — in oklab, which keeps the result theme-aware instead of hardcoding a hex
+  // that a custom theme would then contradict.
   if (ids.length > 2 && index === ids.length - 1) return "var(--v2-red-600)"
   const level = index / Math.max(1, ids.length - 1)
-  if (level < 0.34) return "var(--v2-state-fg-success)"
+  if (level < 0.34) return "color-mix(in oklab, var(--v2-green-800) 62%, var(--v2-yellow-700))"
   if (level < 0.67) return "var(--v2-state-fg-warning)"
   return "var(--v2-red-700)"
 }
@@ -992,23 +998,21 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
   )
   const recommended = createMemo(() => Math.floor((count() - 1) / 2))
   const label = (index: number) => stops()[index]?.label ?? ""
-  // Same scale the gauge needle uses, so the streaks and the colour always agree on what the level is.
-  // Default reads as mid-scale there, so it drifts at mid pace rather than at the floor.
-  const level = createMemo(() => {
-    const ids = thinkingLevelIDs(props.options)
-    if (props.current === "default") return 0.5
-    if (ids.length < 2) return 0
-    return Math.max(0, ids.indexOf(props.current)) / (ids.length - 1)
-  })
   // Half the knob width on each side: the knob travels flush from edge to edge, and pointer math uses the
   // same insets so a press lands exactly where the knob would sit.
   const INSET = 7
   const fraction = (index: number) => (count() <= 1 ? 0 : index / (count() - 1))
+  // The pointer position stays a fraction of the scale while the knob is held, so it tracks the cursor
+  // exactly. Rounding here instead made every stop a detent the knob jumped between, which is what "the
+  // slider is not smooth" felt like: the pointer moves and the knob is somewhere else for most of it.
   const at = (clientX: number, track: HTMLElement) => {
     const rect = track.getBoundingClientRect()
     const f = Math.min(1, Math.max(0, (clientX - rect.left - INSET) / (rect.width - INSET * 2)))
-    return Math.round(f * (count() - 1))
+    return f * (count() - 1)
   }
+  // Where a fraction lands as a choice. Applied to what is named and committed, never to the knob, so the
+  // level reads as one of the levels at all times while the position stays continuous underneath.
+  const nearest = (value: number) => Math.round(Math.min(count() - 1, Math.max(0, value)))
   const [dragging, setDragging] = createSignal(false)
   // While the knob is held the panel follows the pointer and nothing is committed. Committing per
   // pointermove relabelled the tray chip under the open panel on every pixel, and the chip is content-width,
@@ -1016,12 +1020,24 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
   // do: the level is chosen when the drag ends, not while it is still a question.
   const [draft, setDraft] = createSignal<number>()
   const shown = createMemo(() => draft() ?? selected())
+  const choice = createMemo(() => nearest(shown()))
+  // The stop the knob is on, live. Everything that *reads* the level reads this rather than `props.current`,
+  // so the fill's colour and the dot pace move with the pointer while the drag is still a question; only
+  // `onSelect` waits for release. Reading `props.current` instead is what made the slider look inert — the
+  // colour did not move until the drag was already over.
+  const preview = createMemo(() => stops()[choice()]?.id ?? props.current)
+  const level = createMemo(() => {
+    const ids = thinkingLevelIDs(props.options)
+    if (preview() === "default") return 0.5
+    if (ids.length < 2) return 0
+    return Math.max(0, ids.indexOf(preview())) / (ids.length - 1)
+  })
   // Drawn once for the life of the panel, so the scatter survives re-renders instead of reshuffling under
   // the pointer while a drag is in progress.
   const particles = effortParticles()
   const step = (delta: number) => {
-    const next = Math.min(count() - 1, Math.max(0, shown() + delta))
-    if (next === shown()) return
+    const next = Math.min(count() - 1, Math.max(0, choice() + delta))
+    if (next === choice()) return
     setDraft(undefined)
     props.onSelect(stops()[next].id)
   }
@@ -1031,7 +1047,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
       <div class="flex items-center gap-2">
         <span class="text-[13px] leading-5 text-v2-text-text-faint">{i18n.t("ui.promptInput.effort")}</span>
         <span class="truncate text-[13px] font-[530] capitalize leading-5 text-v2-text-text-base">
-          {label(shown())}
+          {label(choice())}
         </span>
       </div>
       <div class="mt-2 flex items-center justify-between text-xs leading-4 text-v2-text-text-faint">
@@ -1044,8 +1060,8 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
         aria-label={i18n.t("ui.promptInput.chooseVariant")}
         aria-valuemin={0}
         aria-valuemax={count() - 1}
-        aria-valuenow={shown()}
-        aria-valuetext={label(shown())}
+        aria-valuenow={choice()}
+        aria-valuetext={label(choice())}
         aria-orientation="horizontal"
         class="relative mt-1 h-6 rounded-md bg-v2-background-bg-layer-03 touch-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v2-border-border-strong"
         onPointerDown={(event) => {
@@ -1060,7 +1076,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
           setDragging(false)
           const value = draft()
           setDraft(undefined)
-          if (value !== undefined) props.onSelect(stops()[value].id)
+          if (value !== undefined) props.onSelect(stops()[nearest(value)].id)
         }}
         // A cancelled drag is a gesture the user took back: drop the preview and leave the level alone.
         onPointerCancel={() => {
@@ -1091,7 +1107,7 @@ function ComposerEffortPanel(props: { options: ComposerOption[]; current: string
           class="absolute inset-y-0 left-0 rounded-md"
           style={{
             width: `calc(${INSET}px + (100% - ${INSET * 2}px) * ${fraction(shown())})`,
-            background: thinkingTone(props.options, props.current),
+            background: thinkingTone(props.options, preview()),
           }}
         />
         <For each={stops()}>
