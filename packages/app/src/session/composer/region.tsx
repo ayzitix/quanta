@@ -35,6 +35,7 @@ import { resolveSessionComposerSelection } from "./selection"
 import { createSessionRequestModel } from "../requests/model"
 import type { Region } from "@/runtime/extension/panels"
 import { SessionLocationMissing } from "./location-missing"
+import { SessionContextRow } from "./session-context-row"
 
 export function createActiveSessionRegion(input: {
   session: SessionModel
@@ -322,25 +323,31 @@ export function ActiveSessionComposerRegion(props: {
             <div class="relative">
               <SessionQueuePanel queue={props.model.queue} />
               <div class="relative z-10">
-                <Composer
-                  model={props.model.composer}
-                  borderUnderlay
-                  readOnly={props.model.queue.undoing()}
-                  suggestionBoundary={props.suggestionBoundary}
-                  barSlot={
-                    <ExtensionSlot
-                      at="session.composer.bar"
-                      input={{
-                        get session() {
-                          return props.view()
-                        },
-                        get screen() {
-                          return props.screen
-                        },
-                      }}
-                    />
-                  }
-                />
+                {/* Above the tray, not in the bar: this row says where the session is, which the
+                    sentence qualifies rather than the instrument cluster configures. The bar below is
+                    inputs — agent, model, thinking power — and a location is none of those. */}
+                <div class="flex flex-col gap-2">
+                  <SessionContextRow session={props.session} />
+                  <Composer
+                    model={props.model.composer}
+                    borderUnderlay
+                    readOnly={props.model.queue.undoing()}
+                    suggestionBoundary={props.suggestionBoundary}
+                    barSlot={
+                      <ExtensionSlot
+                        at="session.composer.bar"
+                        input={{
+                          get session() {
+                            return props.view()
+                          },
+                          get screen() {
+                            return props.screen
+                          },
+                        }}
+                      />
+                    }
+                  />
+                </div>
               </div>
             </div>
           }

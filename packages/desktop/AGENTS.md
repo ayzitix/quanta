@@ -97,6 +97,20 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 
 - `<form data-component="composer">` is the tray. `[data-slot="composer-bar"]` is its **sibling**, directly below,
   both inside the editor root (`flex flex-col gap-0.5`).
+- The context row — project, worktree, branch — sits **above the tray** and hangs off its leading edge, not
+  centred under the bar. It names where the prompt is going, which is the sentence's own furniture, so it reads
+  with the field it qualifies; centred underneath, the three controls read as a status line for the whole panel
+  and sit marooned in the middle of an otherwise left-weighted stack. The gap to the tray is 8px: these are the
+  tray's header, not a section of their own. It lives in `new-session/view.tsx` above `<Composer>`, and in a
+  session in `session/composer/session-context-row.tsx` above the same element in `session/composer/region.tsx`.
+- The session's row is **read-only**, and that is the whole reason it is not the draft's selectors. A session is
+  bound to its location: switching the worktree mid-conversation would not move the session, only the next one,
+  so a picker there would promise something it cannot deliver, and a `disabled` picker is worse — a control that
+  looks live and refuses. It renders `@opencode/ui`'s `ProjectAvatar` primitives rather than importing the
+  new-session selectors, because that module owns the _draft_ project controller whose callbacks mean nothing
+  once a session exists. Branch comes from `data.location.vcs.info({ directory })`, keyed on the project's
+  worktree — the same directory `session/timeline/message-timeline.tsx` already syncs, so the row does not start
+  a sync of its own. Measured: the row's left edge equals the tray's to within 1.5px, and it sits 8px above it.
 - Keep the bar outside the form. The add menu, agent and model controls used to sit inside the form next to the
   submit button; that gave the tray a second full row and made it roughly twice its intended height while looking
   like a one-line input.
