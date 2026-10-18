@@ -1,7 +1,12 @@
 import { describe, expect, test } from "bun:test"
-import type { FileNotFoundError, SessionNotFoundError } from "@opencode/client/promise"
+import type { FileNotFoundError, MessageNotFoundError, SessionNotFoundError } from "@opencode/client/promise"
 import type { ConfigInvalidError, ProviderModelNotFoundError } from "./errors"
-import { formatServerError, isSessionNotFoundError, parseReadableConfigInvalidError } from "./errors"
+import {
+  formatServerError,
+  isMessageNotFoundError,
+  isSessionNotFoundError,
+  parseReadableConfigInvalidError,
+} from "./errors"
 
 function fill(text: string, vars?: Record<string, string | number>) {
   if (!vars) return text
@@ -145,6 +150,32 @@ describe("isSessionNotFoundError", () => {
           cause: { body: { _tag: "ProviderNotFoundError", providerID: "missing" }, status: 404 },
         }),
         "ses_tab",
+      ),
+    ).toBe(false)
+  })
+})
+
+describe("isMessageNotFoundError", () => {
+  const body = {
+    _tag: "MessageNotFoundError",
+    sessionID: "ses_live",
+    messageID: "msg_gone",
+    message: "Message not found",
+  } satisfies MessageNotFoundError
+
+  test("matches an SDK-wrapped or direct structured error for the requested message", () => {
+    expect(isMessageNotFoundError(new Error(body.message, { cause: { body, status: 404 } }), body.messageID)).toBe(true)
+    expect(isMessageNotFoundError(new Error("Unknown error", { cause: body }), body.messageID)).toBe(true)
+  })
+
+  test("rejects errors for other messages and other 404 responses", () => {
+    expect(isMessageNotFoundError(new Error(body.message, { cause: { body, status: 404 } }), "msg_live")).toBe(false)
+    expect(
+      isMessageNotFoundError(
+        new Error("Session not found", {
+          cause: { body: { _tag: "SessionNotFoundError", sessionID: "ses_live" }, status: 404 },
+        }),
+        body.messageID,
       ),
     ).toBe(false)
   })

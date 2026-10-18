@@ -466,6 +466,35 @@ in. `editor.css` wins for the opposite reason: it is unlayered, which is why the
 colour utility. Both directions are easy to get backwards, and the failing case looks like "my rule is in the file and does
 nothing".
 
+### Timeline density is a named preset, and the array order is not the slider's
+
+`timelinePresets` in `packages/session-ui/src/timeline/detail.ts` holds five presets at the time of writing and **26
+call sites address them by index**. Inserting one in the middle silently repoints about fifteen tests at a different
+preset, and every one of them keeps passing, so the mistake surfaces as a UI nobody can explain rather than as a
+failure. A new preset therefore goes **at the end of the array**, and the two places that care about order state it:
+
+- `packages/app/src/settings/timeline-detail.tsx` names the slider order explicitly (`text-only`, `quiet`, `compact`,
+  `separate`, `detailed`, `everything`), least detail first. It must not derive it from the array, because the array
+  now ends with the default and reversing it would put the default on the "least" end.
+- `defaultSettings.general.timelineDetail` reads `defaultTimelineDetail`, a named export, not `timelinePresets[2]`.
+
+**The default is `separate`: every category on its own row, collapsed.** `compact` groups, which is one line saying
+"Used 1 Thought" and hides what it names — too much on the line and too little to read. `quiet` hides them entirely.
+The rung between the two was the one that was missing. `tools` carries a placement only, no `details`: a row there is
+either present or not, so the preset must not claim a collapsed state it cannot express.
+
+### A rewind of a message the server no longer has is not a failure
+
+`revert.stage` answers `MessageNotFoundError` when the message is already gone from the session — the state the rewind
+was for. `request()` in `packages/app/src/session/revert.ts` toasts on every other failure, so that one was the noise
+behind "I pressed send and it did not work": the toast named a problem the user could neither cause nor repair, and
+`resendMessage` carries on to submit either way.
+
+The suppression is a typed predicate, `isMessageNotFoundError(error, messageID)` in
+`packages/app/src/runtime/server/errors.ts`, matched on `_tag` **and** `messageID`. String-matching the toast text
+would be the tempting shortcut and it would swallow genuine 404s for other messages. `request()` therefore takes a
+`reached` predicate naming the failures that mean the desired state already holds; everything else stays visible.
+
 ### The native right-click menu
 
 Electron offers Select All and Inspect Element on right-click. `suppressNativeContextMenu` in
