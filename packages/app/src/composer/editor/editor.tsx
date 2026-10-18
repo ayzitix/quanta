@@ -1624,9 +1624,7 @@ export function ComposerEditorSubmitButton(props: {
         type="button"
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
-        icon={
-          <Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-to-down-left"} />
-        }
+        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
         variant="ghost"
         // size-7, not size-6. It was the only filled object on the surface and had to survive a 6% tray on a
         // near-black page; it carries no fill now, and the 28px box is hit area rather than a mark. It is not
