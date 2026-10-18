@@ -302,8 +302,11 @@ export function CurrentUserMessageDisplay(props: {
 
   const resend = async () => {
     if (!props.actions?.resend || state.reverting) return
-    const text = draft()
-    if (!text.trim() || text === props.text) {
+    // Unchanged text is still a send. The editor carries a model selector, and choosing a different model is
+    // the other half of the same act: rewinding and re-running on that model is the point, and treating
+    // untouched text as "nothing to do" would leave the model unreachable for every message but the ones that
+    // also needed rewording.
+    if (!draft().trim()) {
       cancelEditing()
 
       return
@@ -311,7 +314,7 @@ export function CurrentUserMessageDisplay(props: {
 
     setState("reverting", true)
     try {
-      await props.actions.resend({ sessionID: props.sessionID, messageID: props.message.id, text })
+      await props.actions.resend({ sessionID: props.sessionID, messageID: props.message.id, text: draft() })
     } finally {
       setState("reverting", false)
       setState("editing", false)
