@@ -26,7 +26,6 @@ import { isProjectDirectory, isWorkspaceDirectory } from "@/workspaces/paths"
 import { sessionHref } from "@/shell/routes/session"
 import { showToast } from "@/shell/notifications/toast"
 import { sessionTitle } from "./title"
-import { SessionWorkingIndicator } from "./header/session-working-indicator"
 import "./session-identity-header.css"
 
 export function SessionTitleHeader(props: ParentProps) {
@@ -396,9 +395,6 @@ export function SessionIdentityHeader(props: ParentProps<{ sessionID: string; se
                 )}
               </Show>
               <Show when={parentID() && props.children}>{props.children}</Show>
-              <Show when={!parentID() || !props.children}>
-                <SessionWorkingIndicator sessionID={props.sessionID} />
-              </Show>
               <Show when={(!parentID() || !props.children) && title()}>
                 {(value) => (
                   <h1
