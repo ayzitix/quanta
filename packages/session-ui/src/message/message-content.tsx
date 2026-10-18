@@ -819,7 +819,11 @@ export function AssistantReasoningContent(props: {
   // which made the empty space beside it answer to a click as well; here the trigger is a button around the
   // label alone, so the name is the only thing that opens the reasoning.
   return (
-    <div data-component="reasoning-part" data-timeline-part-id={props.id}>
+    <div
+      data-component="reasoning-part"
+      data-timeline-part-id={props.id}
+      data-streaming={props.streaming ? "" : undefined}
+    >
       <Collapsible
         class="reasoning-collapsible"
         open={open()}
