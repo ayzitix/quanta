@@ -25,17 +25,19 @@
   );
 }
 
-/* Rounded, but not a pill, and rounded the ordinary way. `corner-shape` was declared here through several
-   rounds of guessing and every one of them was wrong: a pill read round at every height, `squircle` at 18px
-   read round too, 8px read as almost square, and the exponent itself is what finally made it look like a
-   different control rather than the same tray. A plain radius under the default ellipse is the shape the rest
-   of the app uses, and it is what a border-radius is supposed to be. 14px on a ~44px tray.
+/* Sharp corners with a soft round, not a pill. `9999px` put a semicircle at both ends at every height, which
+   reads round however small the radius argument is. 8px on a ~44px tray keeps the corner a corner and rounds
+   only the corner itself.
+
+   No `corner-shape`, deliberately. Four variants of it were tried -- 18px, 8px, `superellipse(3)`, `squircle`
+   on the rim -- and each measured exactly what it declared and each was still not the shape asked for. The
+   exponent is not what was wrong, the shape was, and the default ellipse is the one the rest of the app uses.
 
    `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
    override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
    one is something a later rule can replace without unwinding this file. */
 [data-component="composer"] {
-  border-radius: 14px;
+  border-radius: 8px;
   box-shadow: none;
 }
 

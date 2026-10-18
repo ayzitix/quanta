@@ -254,7 +254,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent pt-2.5 pb-12 pe-[calc(var(--composer-actions,44px)+12px)] ps-4 text-[14px] font-[440] leading-[22px] text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-4 text-[14px] font-[440] leading-[22px] text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -328,18 +328,16 @@ export function ComposerEditor(props: ComposerEditorProps) {
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions.
 
-            Pinned to the bottom, not centred in the tray. `inset-y-0` with `items-center` spans whatever
-            height the text has made the tray, so the row sat in the middle of the paragraph with a long
-            draft -- over the text, not beside it. `bottom-2` matches the `end-2` it already had on the right
-            and `h-9` gives the row its own height; `pb-12` on the editor keeps the last line clear of it.
-
-            `pb-12` is a plain number because `--composer-actions` measures how *wide* the row is, which is
-            the right padding's number. Reusing it underneath left the tray 186px tall once a draft was
-            cleared, and it never shrank back. */}
+            `inset-y-0` plus `items-center` rather than a `bottom-*` inset. The row is absolutely
+            positioned, so with only a bottom edge it grows upward from a fixed 8px — and that number is
+            only correct for one tray height. The tray is 42px here (a 22px line box plus the editor's
+            vertical padding), which left the disc 10px from the top and 8px from the bottom. A fixed inset
+            is the same class of bug as a fixed `--composer-actions`: both derive position from a tray
+            measurement that the next font-size change invalidates. Centring needs no number at all. */}
         <div
           ref={actions}
           data-slot="composer-actions"
-          class="absolute end-2 bottom-2 z-20 flex h-9 max-w-[calc(100%-104px)] items-center"
+          class="absolute end-2 inset-y-0 z-20 flex max-w-[calc(100%-104px)] items-center"
         >
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
