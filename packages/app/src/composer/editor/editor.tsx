@@ -1624,11 +1624,14 @@ export function ComposerEditorSubmitButton(props: {
         type="button"
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
-        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />}
+        icon={
+          <Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-to-down-left"} />
+        }
         variant="ghost"
-        // size-7, not size-6. The disc is the only filled object on the surface and it has to survive a
-        // 6% tray on a near-black page; at 24px it reads as a mark rather than as the control you press,
-        // and the glyph inside it has no room to be legible at the sizes the icon actually renders.
+        // size-7, not size-6. It was the only filled object on the surface and had to survive a 6% tray on a
+        // near-black page; it carries no fill now, and the 28px box is hit area rather than a mark. It is not
+        // dropped to 24px because a send control is the one thing pressed rather than aimed at, and 24px is a
+        // mark's size.
         class="size-7 rounded-full p-1"
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
