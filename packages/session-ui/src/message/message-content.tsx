@@ -25,10 +25,8 @@ import { IconButton } from "@opencode/ui/icon-button"
 import { Menu } from "@opencode/ui/menu"
 import { Icon } from "@opencode/ui/icon"
 import { Button } from "@opencode/ui/button"
-import { TextReveal } from "@opencode/ui/text-reveal"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
 import { BasicTool } from "../components/basic-tool"
-import { reasoningHeading } from "../timeline/projection"
 import { Card } from "@opencode/ui/card"
 import type {
   PromptAgentAttachment,
@@ -829,23 +827,10 @@ export function AssistantReasoningContent(props: {
   const i18n = useI18n()
   const [state, setState] = createStore<{ open?: boolean }>({})
   const open = () => props.open ?? state.open ?? props.defaultOpen ?? false
-  const heading = createMemo(() => (props.streaming ? reasoningHeading(props.content.text) : ""))
 
-  const duration = createMemo(() => {
-    const time = props.content.time
-
-    if (time?.completed === undefined) return undefined
-    const total = Math.max(0, Math.round((time.completed - time.created) / 1000))
-    const numfmt = new Intl.NumberFormat(i18n.locale())
-
-    if (total < 60) return i18n.t("ui.message.duration.seconds", { count: numfmt.format(total) })
-
-    return i18n.t("ui.message.duration.minutesSeconds", {
-      minutes: numfmt.format(Math.floor(total / 60)),
-      seconds: numfmt.format(total % 60),
-    })
-  })
-
+  // One line that says thinking happened, and the reasoning behind it one click away. Not a heading the model
+  // writes: the reasoning it produces carries no headings at all, so a heading line would be empty most turns
+  // and the row would lose its label exactly when there is something to read.
   return (
     <div data-component="reasoning-part" data-timeline-part-id={props.id}>
       <BasicTool
@@ -854,7 +839,6 @@ export function AssistantReasoningContent(props: {
         compact
         hasContent
         allowOpenWhilePending
-        hideDetails={!props.content.text.trim()}
         open={open()}
         onOpenChange={(value) => {
           setState("open", value)
@@ -870,18 +854,6 @@ export function AssistantReasoningContent(props: {
                   active={props.streaming}
                 />
               </span>
-              <Show
-                when={props.streaming && !open()}
-                fallback={
-                  <Show when={!props.streaming && duration()}>
-                    {(value) => <span data-slot="basic-tool-tool-subtitle">{value()}</span>}
-                  </Show>
-                }
-              >
-                <span data-slot="basic-tool-tool-subtitle">
-                  <TextReveal text={heading()} />
-                </span>
-              </Show>
             </div>
           </div>
         }

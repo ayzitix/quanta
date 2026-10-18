@@ -487,6 +487,22 @@ Two things this buys, both of which are easy to undo by accident:
 `timelinePresets` itself stays: stories and tests address it, and **26 call sites address it by index**, so a preset
 is appended rather than inserted. `runtime.tsx` reads it for `initialMessageLimit` (40 at `compact`, 20 otherwise).
 
+**The thinking row carries no heading and no duration.** `AssistantReasoningContent` is a `BasicTool` disclosure
+whose trigger is one `TextShimmer` line reading `Thought`, or `Thinking` while streaming. Two things were tried and
+replaced here, and both are worth not retrying:
+
+- **A heading the model writes.** `reasoningHeading` extracted one from the reasoning's markdown and the row showed
+  it shimmering. The reasoning this model produces contains **no headings at all** — zero of every part in the store,
+  no `##`, no bold-line convention — so the line was empty on every turn that had anything to say. The extractor
+  and its tests were deleted rather than left as dead exports. A heading line can only work with a model that has
+  agreed to write one, which is a prompt change, not a rendering one.
+- **`Thought 0s`.** The duration subtitle made the row a stopwatch. The time taken is not what the reader wants to
+  know, and the row is a label for a disclosure rather than a measurement.
+
+The row is `placement: "separate"` and that is load-bearing: `contentGroupType` returns `"context"` for reasoning
+only when `placement === "grouped"`, which is what produced "Used 1 Thought". Nothing else in the timeline changed —
+tools still group, and the notices that end a segment still do.
+
 ### A rewind of a message the server no longer has is not a failure
 
 `revert.stage` answers `MessageNotFoundError` when the message is already gone from the session — the state the rewind

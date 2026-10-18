@@ -79,10 +79,18 @@ export const timelinePresets = [
 /** The one density the timeline renders at. There is no longer a preference behind it: the control that chose
     between these was removed, so a stored `timelineDetail` is discarded on read and this is what every session
     gets. Referenced by id rather than by index so reordering the array cannot repoint it.
-    Typed as `TimelineDetail` rather than as `compact`'s literal shape: the timeline reads every branch of this
-    value, and narrowing it here would have the compiler reject code that is correct the moment the density is
-    variable again. */
-export const defaultTimelineDetail: TimelineDetail = timelinePresets.find((preset) => preset.id === "compact")!.value
+
+    `compact` with one exception: thinking is `separate` rather than `grouped`. Grouping it produced one line
+    reading "Used 1 Thought", which names the count and shows nothing about what was thought. A row of its own
+    says `Thought` and opens to the reasoning, so the count is gone and the content is one click away.
+
+    Typed as `TimelineDetail` rather than as a literal shape: the timeline reads every branch of this value, and
+    narrowing it here would have the compiler reject code that is correct the moment the density is variable
+    again. */
+export const defaultTimelineDetail: TimelineDetail = {
+  ...timelinePresets.find((preset) => preset.id === "compact")!.value,
+  thinking: { placement: "separate", details: "collapsed" },
+}
 
 export function timelinePreset(value: TimelineDetail) {
   return timelinePresets.find((preset) =>

@@ -931,28 +931,26 @@ export function createSessionTimelineRowRenderer(input: {
       return (
         <Frame row={current()}>
           <div data-slot="session-turn-message-container" class={`w-full ${padding()}`}>
-            <div data-slot="session-turn-thinking-row">
-              <Show when={content()}>
-                {(content) => (
-                  <AssistantReasoningContent
-                    id={current().ref.partID}
-                    content={content()}
-                    streaming
-                    defaultOpen={
-                      input.timelineDetail
-                        ? input.timelineDetail().thinking.details === "expanded"
-                        : input.reasoningMode() === "full"
-                    }
-                    open={
-                      input.disclosure.value(current().ref.partID) ??
-                      (input.timelineDetail ? input.timelineDetail().thinking.details === "expanded" : undefined)
-                    }
-                    onOpenChange={(open) => input.disclosure.set(current().ref.partID, open)}
-                    onContentRendered={onSizeChange}
-                  />
-                )}
-              </Show>
-            </div>
+            <Show when={content()}>
+              {(content) => (
+                <AssistantReasoningContent
+                  id={current().ref.partID}
+                  content={content()}
+                  streaming
+                  defaultOpen={
+                    input.timelineDetail
+                      ? input.timelineDetail().thinking.details === "expanded"
+                      : input.reasoningMode() === "full"
+                  }
+                  open={
+                    input.disclosure.value(current().ref.partID) ??
+                    (input.timelineDetail ? input.timelineDetail().thinking.details === "expanded" : undefined)
+                  }
+                  onOpenChange={(open) => input.disclosure.set(current().ref.partID, open)}
+                  onContentRendered={onSizeChange}
+                />
+              )}
+            </Show>
           </div>
         </Frame>
       )
