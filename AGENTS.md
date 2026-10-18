@@ -178,31 +178,47 @@ const table = sqliteTable("session", {
 substitutes `${OPENCODE_TOOL_GUIDANCE}` with per-tool instructions, so the placeholder must survive verbatim — the
 replacement is a plain `String.replace`, and nothing validates that it fired.
 
-It is written as instructions to a person, not as a description of the harness. The earlier version opened by
-explaining what a harness was and how output renders; that is the shape to avoid, because a prompt that explains
-is a prompt that has no room left to command. Three rules carry the design and each exists because its absence
-was felt:
+It is written as instructions to a person, not as a description of the harness. It opens by saying what the work
+is, not what a harness is, because a prompt that explains itself has no room left to command.
 
-- **Ask is the default, bounded by one test.** The answer changes what you do, so ask; it does not, so decide. The
-  bound matters as much as the rule: an unbounded "always ask" freezes the agent, and the user then has to ask
-  the agent to begin, which they stop doing. Asking has a cheaper form the agent must try first — take the
-  reversible path instead of asking (`git mv` over `rm`, a branch over a working copy), since a big repository
-  cannot be copied cheaply.
-- **Think wide, act narrow.** Initiative is allowed in words — propose, point out, name a better way — and
-  restricted in actions. Without that split, "touch only what the request needs" silences the agent entirely and
-  "make the project better" is unrestricted scope. The surgical rule also needs its exception: fixes the change
-  itself made necessary are part of the request.
-- **Say the outcome.** Plainly done when it is done; uncertain where it is uncertain, with a reason. "No hedging"
-  and "state what you are unsure of" contradict each other unless they are two sentences — the first is about the
-  result, the second about the gap in knowledge, and merging them hides the gap.
+**The load-bearing rule is the second paragraph, and it is the one most likely to be "cleaned up" by mistake.**
+A declarative rule about the agent's character — _I never hide anything_, _I always ask first_, _I can't lie_ —
+is satisfied by producing those words and changes no behaviour. The agent will recite the virtue instead of
+acting on it, and the failure is invisible because the reply looks like compliance. So the prompt forbids
+describing itself through its own rules and names the phrases in the forbidding, which makes the rule checkable
+rather than a matter of tone. Adding any rule phrased as a property of the agent's character reintroduces this;
+`care what it is for` in the project section is the one virtue left, kept as motivation for the orientation rule
+that follows it.
 
-Ask about anything irreversible that has no reversible equivalent, naming exactly what would be touched. Without
-that rule a request like "clean up this folder" is read literally and the agent deletes the folder.
+**Asking is three tiers, not one test.** _Act_ when there is no real choice or it makes no difference to the
+work; _act and say_ when a real choice exists but guessing wrong is cheap to fix, then state the assumption in a
+line; _ask_ when guessing wrong would cost real work. A single test cannot separate these — "ask when the answer
+changes what you do" and "otherwise act" pull in opposite directions, and ordering them does not resolve it,
+because the model reads both. The middle tier is what makes the other two coherent, and it has no precedent in
+any competitor prompt.
+
+Two valves keep widening the ask side from freezing the agent, and both are needed. _A clear, complete request is
+an instruction, not an invitation to negotiate_ governs the moment of decision. _An answer settles the question
+asked; it is not a second approval gate_ governs the turn after, because the first cannot help once a question
+has been asked.
+
+**Reversibility and scope act on disjoint objects.** Scope covers what exists afterwards — commits, branches,
+worktrees, config outside the repository. Reversibility covers how one operation is performed. That is why a
+reversible route may be move-instead-of-delete or dry-run-first but may not be _make a branch_: a branch is a
+new thing to create, so it falls back under Scope and needs the user's word. Folding either rule into the other
+resolves the collision by deleting the boundary, and the collision comes straight back — the same situation then
+has two correct answers depending on which rule the model reaches first.
+
+**Reporting is the last line of the prompt on purpose.** Brevity precedes it so that "failure output and
+anything you did not verify are not brevity" can follow and override it. Reversed, the unqualified brevity rule
+lands last and is the one that wins.
 
 Craft rules — minimum code, nothing speculative, decide what proves it worked before starting — came from
-Andrej Karpathy's four guidelines; "never name a tool" from Cursor; honest reporting from Claude Code, which kept
-its reporting rules after cutting its entire tone section. Cursor's newer prompt is the counter-example: it
-mandates status narration between tool batches, which is the opposite of what a terminal user wants.
+Andrej Karpathy's four guidelines. Honest reporting and the ask-if-unclear clause came from Claude Code, which
+the user works with daily and rates above the rest for asking well while still executing well. "Never name a
+tool" from Cursor. Codex contributes the ambition-versus-precision split and brevity-as-a-default; Cursor's newer
+prompt is the counter-example, mandating status narration between tool batches, which is the opposite of what a
+terminal user wants.
 
 ## Session Core
 
