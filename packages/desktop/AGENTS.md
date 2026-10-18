@@ -378,6 +378,56 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   into a smear. Give a hand-drawn glyph an explicit weight, and give the svg `data-slot="icon-svg"` so the 45°
   cross rule still finds it.
 
+### Editing a user message in place
+
+Clicking a user message turns the bubble into a field: a squircle of its measured width, a textarea of two lines,
+the composer's model chip at the leading end and its send disc at the trailing one. Enter sends, Escape and a click
+outside dismiss, and the rewrite runs through the machinery that already existed — `revert.to` stages the rewind and
+`controller.composer.submit()` runs the turn.
+
+- **The bubble keeps its shape and loses its padding.** Fill and rim change; `border-radius` and `corner-shape` do not,
+  so the box does not change shape the moment it becomes editable. The padding moves off the bubble entirely and onto
+  its two parts, because one uniform value cannot serve both: the field needs the message's own `8px 12px` or the caret
+  jumps sideways on open, and the controls need a tighter 6px from the corner or they read as hung off it. The tray's
+  pill was tried and reads as a button among messages — the curve and the number travel together, and `9999px` under a
+  squircle clamps back to an ellipse.
+- **The controls sit in flow, not floating over the field.** Floating them needed padding to reserve their space, which
+  indented the text 36px from both sides and pushed the last line of a wrapped message under the send button. The row is
+  `flex items-center gap-1` with `ms-auto` on send: `justify-between` sets the space _between_ children, and with two
+  controls at the leading end that is the wrong gap.
+- **Dismissal is a `pointerdown` outside the bubble, not a `focusout`.** The model selector is a portal, and closing it
+  after a choice drops focus on the document, so `relatedTarget` is `null` — a focus rule reads that as "dismissed" at the
+  exact moment the model was picked, and the editor closed. A pointer says where the hand went, which is what dismissal
+  is about. If a focus rule is ever wanted here, it has to survive a null `relatedTarget` and a menu item.
+- **The model chip is the tray's own component**, extracted to `packages/app/src/composer/model-control.tsx` so both
+  render one thing: the unpaid path, the mobile drawer, provider grouping and the animation are four things to get wrong
+  twice. It reaches the message as a **function** rather than a node, because the message owns focus while it is open and
+  the picker has to hand focus back to that field, not to the tray. Build it **once in a `createMemo`** — written straight
+  into JSX it is reconstructed on every pass over the parent's children, which remounts the selector and closes its menu
+  under the pointer on the way to picking a model.
+- **Unchanged text is still a send.** The editor carries a model selector, and choosing a different model is the other
+  half of the same act; treating untouched text as "nothing to do" made the model unreachable for every message that did
+  not also need rewording.
+- **Enter-to-edit requires a collapsed selection.** Otherwise dragging across the message to copy a phrase opens the
+  editor instead. Collapsing on a click-only press is what tells the two apart.
+- **The resend composes `revert.to` with the composer's own submit** rather than adding an operation. `revert.to`
+  restores the original prompt into the tray, which is right when the tray is the editing surface and wrong here, so the
+  tray's draft is captured before and put back after — `restore` is what keeps the message's attachments on the re-sent
+  turn. `submit` clones the draft synchronously before its first `await`, which is what makes restoring it immediately
+  safe.
+- **The attach control was removed, deliberately.** It delegated to the tray's own trigger, which edits the _tray's_
+  draft — a second source of truth for one prompt. Doing it properly means the editor writes to that prompt, and that
+  also puts the message being edited into the tray as you type, which is not what either of them means. That is a
+  decision to make on purpose, not one to arrive at through a button.
+
+**The cascade here is worth stating once.** `message-part.css` is imported into `layer(components)` and `icon-button.css`
+is injected from its own module into the same layer, so an equal-specificity rule loses to whichever lands later in the
+document — and the component's does. `[data-slot] [data-action]` is not enough; add `[data-component="icon-button-v2"]`
+and the rule wins without `!important` and without moving one file out of the layer the rest of the message styles live
+in. `editor.css` wins for the opposite reason: it is unlayered, which is why the composer's own chrome can beat a Tailwind
+colour utility. Both directions are easy to get backwards, and the failing case looks like "my rule is in the file and does
+nothing".
+
 ### Extension content in the composer
 
 The bar hosts extension content through the `session.composer.bar` slot, one of five on `SlotMap`. Adding a slot
@@ -432,6 +482,14 @@ backing it.
 - `bun run dev:desktop` from the repo root, or `bun dev` from `packages/desktop`. HMR covers `packages/ui`, so
   glyph and token edits show up without a restart. Add the `ELECTRON_CLI_ARGS` from the Vulkan section above if
   the app dies with a GPU fatal shortly after launching.
+- **When the renderer serves code that is not on disk, check the vite log before you change anything.**
+  `packages/session-ui` edits are delivered as `hot updated: ../session-ui/...` lines, and after one
+  `no importers to handle import.meta.hot.invalidate()` the watcher went quiet for that workspace while app
+  files kept updating — twice, over two sessions. A renderer reload did not fix it; only restarting `dev:desktop`
+  did. The symptom is a DOM that disagrees with the file you just edited, and the tempting wrong move is to
+  re-`edit` the source, which buries the real cause under three diffs of nothing. Grep the log for your file name
+  first. The backend on `:3084` is a separate process and a restart does not take it down, but leave it alone
+  regardless.
 - Never pipe `bun typecheck` into `tail` or `head` and then read the exit status. A pipeline reports the _filter's_
   status, so `bun typecheck 2>&1 | tail -4` exits 0 on a file with unbalanced JSX while the dev server prints
   `Expected corresponding JSX closing tag for <form>`. Redirect to a file and read `$?`, or do not pipe.
