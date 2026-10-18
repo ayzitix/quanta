@@ -154,7 +154,7 @@
 /* The two marks take a fill on hover, and Cursor's is 8% white — the same step as the rim, where the shared
    ghost token is 4%. Declared here rather than by changing the token because that token belongs to every
    ghost button in the product, and this file is unlayered so it outranks `icon-button.css` regardless.
-   Send is excluded: it carries its own fill, and inheriting a ghost hover here would replace it. */
+   Send is excluded: it declares its own colour below, and inheriting a ghost hover here would replace it. */
 [data-component="composer"]
   [data-component="icon-button-v2"]:is(:hover, [data-state="hover"]):not(:disabled):not([data-expanded]):not(
     [data-action="composer-submit"]
@@ -268,16 +268,14 @@
    loses to both of them and the stop mark comes out in the resting tone. Note the direction of the
    cascade, because it is easy to get backwards: a colour utility does beat `icon-button.css`'s own `color`
    (verified — adding `text-v2-state-fg-danger` to an untouched `ghost-muted` icon button turns it pink). */
-[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"] {
-  background-color: var(--v2-text-text-contrast);
-  color: var(--v2-background-bg-base);
-}
+/* Send is a mark on the tray, not a disc. The white fill was here for as long as the tray was a pill and it
+   was the only saturated object on the surface; with the tray squared off and the model moved into the bar,
+   a filled circle reads as a second, louder button rather than as the send affordance. Nothing on hover
+   either -- an eight-percent lift is what the other marks take, and the ghost hover rule above already
+   excludes this one, so there is nothing to override. */
 
-[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:is(
-    :hover,
-    [data-state="hover"]
-  ) {
-  background-color: color-mix(in srgb, var(--v2-text-text-contrast) 80%, transparent);
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"] {
+  color: var(--v2-text-text-base);
 }
 
 [data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:disabled {
