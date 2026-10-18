@@ -64,25 +64,6 @@ export const timelinePresets = [
     },
   },
   {
-    // The rung between `detailed` and `compact`: every category on its own row, each collapsed until opened.
-    // `compact` groups, which is too much on one line and too little to read; `everything` shows the contents
-    // already open, which buries the answer in the transcript it is an aside to. This is the reading position:
-    // names in the flow, details on demand.
-    //
-    // Appended rather than inserted: twenty-six call sites address these by index, and shifting them would
-    // silently repoint fifteen tests at a different preset. The slider's order is stated where the slider is.
-    id: "separate",
-    value: {
-      shell: { placement: "separate", details: "collapsed" },
-      edit: { placement: "separate", details: "collapsed" },
-      thinking: { placement: "separate", details: "collapsed" },
-      subagents: { placement: "separate" },
-      notices: { placement: "separate" },
-      // No `details`: this category carries a placement only, so a row here is either there or not.
-      tools: { placement: "separate" },
-    },
-  },
-  {
     id: "text-only",
     value: {
       shell: { placement: "hidden", details: "collapsed" },
@@ -95,9 +76,13 @@ export const timelinePresets = [
   },
 ] as const satisfies readonly { id: string; value: TimelineDetail }[]
 
-/** The default density for a new install: names in the flow, details on demand. Referenced by id rather
-    than by index so that reordering the array cannot repoint it. */
-export const defaultTimelineDetail = timelinePresets.find((preset) => preset.id === "separate")!.value
+/** The one density the timeline renders at. There is no longer a preference behind it: the control that chose
+    between these was removed, so a stored `timelineDetail` is discarded on read and this is what every session
+    gets. Referenced by id rather than by index so reordering the array cannot repoint it.
+    Typed as `TimelineDetail` rather than as `compact`'s literal shape: the timeline reads every branch of this
+    value, and narrowing it here would have the compiler reject code that is correct the moment the density is
+    variable again. */
+export const defaultTimelineDetail: TimelineDetail = timelinePresets.find((preset) => preset.id === "compact")!.value
 
 export function timelinePreset(value: TimelineDetail) {
   return timelinePresets.find((preset) =>

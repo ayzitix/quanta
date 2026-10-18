@@ -359,8 +359,8 @@ describe("reasoningHeading", () => {
     expect(reasoningHeading("## First step\n\nDetails.\n\n## Second step\n\nMore details.")).toBe("Second step")
     expect(reasoningHeading("<h2>First step</h2>\n<p>Body</p>\n<h3>Second step</h3>")).toBe("Second step")
     expect(reasoningHeading("First step\n===\n\nSecond step\n---")).toBe("Second step")
-    expect(
-      reasoningHeading("**Designing Interactive Experience**\n\n**Note** that this line ends with **bold**"),
-    ).toBe("Designing Interactive Experience")
+    expect(reasoningHeading("**Designing Interactive Experience**\n\n**Note** that this line ends with **bold**")).toBe(
+      "Designing Interactive Experience",
+    )
   })
 })

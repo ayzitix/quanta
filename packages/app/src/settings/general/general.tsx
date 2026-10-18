@@ -2,7 +2,6 @@ import { Component, Show, createMemo, createResource } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { Select } from "@opencode/ui/select"
 import { Switch } from "@opencode/ui/switch"
-import { TimelineDetailControl } from "@/settings/timeline-detail"
 import { useLanguage } from "@/runtime/i18n/language"
 import { usePlatform } from "@/runtime/platform/platform"
 import { ExtensionSettingsSections } from "@/runtime/extension/settings-page-view"
@@ -299,12 +298,6 @@ export const SettingsGeneral: Component = () => {
         <section class="settings-section" aria-label={language.t("settings.timeline.title")}>
           <h3 class="settings-section-title">{language.t("settings.timeline.title")}</h3>
           <SettingsList>
-            <div class="py-5">
-              <TimelineDetailControl
-                value={settings.general.timelineDetail()}
-                onChange={settings.general.setTimelineDetail}
-              />
-            </div>
             <SettingsRow
               title={language.t("settings.timeline.row.turnDiffs.title")}
               description={language.t("settings.timeline.row.turnDiffs.description")}

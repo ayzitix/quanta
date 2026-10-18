@@ -42,13 +42,7 @@ export const ProjectOptions: Component<{
   }
 
   return (
-    <Menu
-      gutter={4}
-      modal={false}
-      placement="bottom-end"
-      open={props.open}
-      onOpenChange={props.onOpenChange}
-    >
+    <Menu gutter={4} modal={false} placement="bottom-end" open={props.open} onOpenChange={props.onOpenChange}>
       <Menu.Trigger
         as={IconButton}
         variant="ghost-muted"
@@ -66,7 +60,9 @@ export const ProjectOptions: Component<{
             {(rename) => <Menu.Item onSelect={rename}>{language.t("common.rename")}</Menu.Item>}
           </Show>
           <Show when={revealProject.available(props.server)}>
-            <Menu.Item onSelect={() => revealProject.reveal(props.server, props.project)}>{language.t(fileManagerApp(platform.os ?? "unknown").actionLabel)}</Menu.Item>
+            <Menu.Item onSelect={() => revealProject.reveal(props.server, props.project)}>
+              {language.t(fileManagerApp(platform.os ?? "unknown").actionLabel)}
+            </Menu.Item>
           </Show>
           <Menu.Item disabled={!hasUnread()} onSelect={clearNotifications}>
             {language.t("sidebar.project.clearNotifications")}

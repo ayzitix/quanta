@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
-import { defaultTimelineDetail, timelinePresets } from "@opencode/session-ui/timeline/detail"
 import { Persistence } from "@/runtime/persistence/schema"
 import {
   settingsSchema,
@@ -19,23 +18,28 @@ const decode = Schema.decodeUnknownSync(schema)
 
 const encode = Schema.encodeSync(schema)
 
-describe("settings timeline detail migration", () => {
-  test("migrates saved switches and round trips the current settings", () => {
+describe("the retired timeline density preference", () => {
+  // The control that wrote it is gone, so every stored document still carries `timelineDetail` and the
+  // booleans that used to feed it. The regression this guards is not a stale value being honoured -- the
+  // schema drops it -- it is the read side losing its rest tolerance and rejecting the whole document,
+  // which would take every unrelated setting with it.
+  test("is discarded on read without taking the surrounding document with it", () => {
     const settings = decode({
-      general: { shellToolPartsExpanded: true, editToolPartsExpanded: false, showReasoningSummaries: true },
+      general: {
+        timelineDetail: { shell: { placement: "separate", details: "expanded" } },
+        shellToolPartsExpanded: true,
+        editToolPartsExpanded: false,
+        reasoningMode: "full",
+        showReasoningSummaries: true,
+        showTurnDiffs: true,
+      },
       appearance: { fontSize: 16 },
     })
 
-    expect(settings.general.timelineDetail).toEqual({
-      ...defaultTimelineDetail,
-      shell: { placement: "separate", details: "expanded" },
-      // Stated rather than inherited: the legacy switches map all three categories themselves, and reading
-      // `edit` off the default hides that this one lands on grouped whatever the default says.
-      edit: { placement: "grouped", details: "collapsed" },
-      thinking: { placement: "separate", details: "expanded" },
-    })
+    expect(settings.general).not.toHaveProperty("timelineDetail")
+    expect(settings.general).not.toHaveProperty("reasoningMode")
+    expect(settings.general.showTurnDiffs).toBe(true)
     expect(settings.appearance.fontSize).toBe(16)
-    expect(decode(encode(settings))).toEqual(settings)
   })
 })
 
@@ -76,17 +80,13 @@ describe("settings schema", () => {
   test("uses the supplied initial values independently of the current schema", () => {
     const initial = {
       ...defaultSettings,
-      general: { ...defaultSettings.general, timelineDetail: timelinePresets[4].value, autoSave: false },
+      general: { ...defaultSettings.general, autoSave: false },
       appearance: { ...defaultSettings.appearance, fontSize: 20 },
     }
 
     const restore = Schema.decodeUnknownSync(Persistence.withInitial(settingsPersistence, initial))
     expect(restore({})).toEqual(initial)
     expect(restore({ general: { reasoningMode: "invalid", showReasoningSummaries: true } })).toEqual(initial)
-    expect(restore({ general: { showReasoningSummaries: true } }).general.timelineDetail.thinking).toEqual({
-      placement: "separate",
-      details: "expanded",
-    })
     expect(() => Schema.decodeUnknownSync(settingsSchema)({})).toThrow()
   })
 
@@ -94,7 +94,6 @@ describe("settings schema", () => {
     expect(decode({})).toEqual({
       general: {
         showFileTree: false,
-        timelineDetail: defaultTimelineDetail,
         showTurnDiffs: false,
         mobileTitlebarPosition: "top",
         terminalPlacement: "side",
@@ -142,7 +141,6 @@ describe("settings schema", () => {
     expect(settings.general).toMatchObject({
       showTerminal: true,
       autoSave: false,
-      timelineDetail: defaultTimelineDetail,
       followUpBehavior: "steer",
     })
     expect(settings.appearance).toEqual({

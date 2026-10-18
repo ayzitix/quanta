@@ -753,35 +753,6 @@ export const dict = {
   "settings.about.copyright": "© Anomaly Innovations, Inc.",
   "project.settings.title": "ပရောဂျက်ကို တည်းဖြတ်ပါ။",
   "settings.timeline.title": "အချိန်ဇယား",
-  "settings.timeline.detail": "အချိန်ဇယားအသေးစိတ်",
-  "settings.timeline.description":
-    "အချိန်ဇယားတွင် လှုပ်ရှားမှုမည်မျှပေါ်လာသည်ကို ရွေးပါ။ မက်ဆေ့ချ်များကို မြင်နိုင်စေပါသည်။",
-  "settings.timeline.preset.everything": "အရာအားလုံး",
-  "settings.timeline.preset.detailed": "အသေးစိတ်",
-  "settings.timeline.preset.compact": "ကျစ်လျစ်သော",
-  "settings.timeline.preset.quiet": "တိတ်တိတ်",
-  "settings.timeline.preset.text-only": "စာသားသက်သက်",
-  "settings.timeline.description.everything":
-    "လှုပ်ရှားမှုအားလုံးကို သီးခြားစီပြပါ။ Shell အထွက်ကို ချဲ့ထွင်ခြင်း၊ တည်းဖြတ်ခြင်းနှင့် တွေးခေါ်ခြင်းများ။",
-  "settings.timeline.description.detailed":
-    "shell အထွက်ကို ချဲ့ပြီး တည်းဖြတ်ပါ။ အခွဲများကို သီးခြားပြသပြီး Used တွင် အခြားလုပ်ဆောင်ချက်များကို အုပ်စုဖွဲ့ပါ။",
-  "settings.timeline.description.compact":
-    "အသေးစိတ်အချက်အလက်များဖြင့် အသုံးပြုထားသော လုပ်ဆောင်ချက်အားလုံးကို အုပ်စုဖွဲ့ထားသည်။",
-  "settings.timeline.description.quiet":
-    "တစ်ပတ်ရစ်တွင် အုပ်စုတည်းဖြတ်မှုများနှင့် လက်အောက်ခံများ။ အခြားလုပ်ဆောင်ချက်ကို ဖျောက်ပါ။",
-  "settings.timeline.description.text-only": "လုပ်ဆောင်ချက်အားလုံးကို ဝှက်ထားပါ။ မက်ဆေ့ချ်များကိုသာ ပြသပါ။",
-  "settings.timeline.description.custom":
-    "လှုပ်ရှားမှုအမျိုးအစားတစ်ခုစီအတွက် သင်ရွေးချယ်ထားသော နေရာနှင့် အသေးစိတ်အချက်အလက်များကို အသုံးပြုပါ။",
-  "settings.timeline.custom": "စိတ်ကြိုက်",
-  "settings.timeline.advanced": "အဆင့်မြင့်",
-  "settings.timeline.advanced.description":
-    "လှုပ်ရှားမှုအမျိုးအစားတစ်ခုစီအတွက် နေရာချထားမှုနှင့် အသေးစိတ်အချက်အလက်များကို သတ်မှတ်ပါ။",
-  "settings.timeline.category.shell": "ဘူးခွံ",
-  "settings.timeline.category.edit": "တည်းဖြတ်မှုများ",
-  "settings.timeline.category.thinking": "စဉ်းစားနေသည်။",
-  "settings.timeline.category.subagents": "အေးဂျင့်ခွဲများ",
-  "settings.timeline.category.notices": "သတိပေးချက်များ",
-  "settings.timeline.category.tools": "အခြားကိရိယာများ",
 
   "provider.connect.error.unsupportedFields": "ဤအထောက်အထားစိစစ်ခြင်းဖောင်တွင် ပံ့ပိုးမထားသော အကွက်များပါရှိသည်။",
   "settings.about.writtenByNames": "{{names}} မှ ရေးသည်",
@@ -868,14 +839,6 @@ export const dict = {
   "project.settings.extensions.lsp.disabled.description": "ဤပရောဂျက်၏ ဖွဲ့စည်းမှုတွင် LSP ကို ပိတ်ထားသည်",
   "project.settings.extensions.lsp.loadFailed": "ဘာသာစကားဆာဗာစီတင်ဖွဲ့အစည်းကို မတင်နိုင်ပါ",
   "project.settings.extensions.lsp.retry": "ပြန်ကြိုးစားပါ",
-  "settings.timeline.summary": "{{preset}}:",
-  "settings.timeline.group": "အုပ်စု",
-  "settings.timeline.collapse": "ပိတ်ရန်",
-  "settings.timeline.visibility.show": "ပြရန်",
-  "settings.timeline.visibility.hide": "ဖျောက်ရန်",
-  "settings.timeline.visibility.label": "{{activity}} မြင်သာမှု",
-  "settings.timeline.grouped.label": "{{activity}} အုပ်စုဖွဲ့ပြီး",
-  "settings.timeline.collapsed.label": "{{activity}} ပိတ်ထား",
   "session.new.workspace.search.empty": "ကိုက်ညီသော worktrees မရှိပါ",
   "settings.workspaces.description": "worktrees ကို ပြန်လည်သုံးသပ်ပြီး ဒစ်စ်ကိုသုံးစွဲမှုကို စီမံပါ",
   "settings.workspaces.empty.description": "Quanta တွင်ဖန်တီးထားသော worktrees များကို ဒီမှာတွေ့နိုင်ပါမည်",

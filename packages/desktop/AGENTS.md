@@ -466,22 +466,26 @@ in. `editor.css` wins for the opposite reason: it is unlayered, which is why the
 colour utility. Both directions are easy to get backwards, and the failing case looks like "my rule is in the file and does
 nothing".
 
-### Timeline density is a named preset, and the array order is not the slider's
+### Timeline density is a constant, not a preference
 
-`timelinePresets` in `packages/session-ui/src/timeline/detail.ts` holds five presets at the time of writing and **26
-call sites address them by index**. Inserting one in the middle silently repoints about fifteen tests at a different
-preset, and every one of them keeps passing, so the mistake surfaces as a UI nobody can explain rather than as a
-failure. A new preset therefore goes **at the end of the array**, and the two places that care about order state it:
+The timeline renders at exactly one density: `compact`, named by `defaultTimelineDetail` in
+`packages/session-ui/src/timeline/detail.ts`. There is no control. The settings field, the slider, the Advanced
+per-category panel, their story, the search-catalog entry and thirty-one i18n keys across sixty-three locales went
+with it — a switch that controls nothing is a defect, not a harmless leftover.
 
-- `packages/app/src/settings/timeline-detail.tsx` names the slider order explicitly (`text-only`, `quiet`, `compact`,
-  `separate`, `detailed`, `everything`), least detail first. It must not derive it from the array, because the array
-  now ends with the default and reversing it would put the default on the "least" end.
-- `defaultSettings.general.timelineDetail` reads `defaultTimelineDetail`, a named export, not `timelinePresets[2]`.
+Two things this buys, both of which are easy to undo by accident:
 
-**The default is `separate`: every category on its own row, collapsed.** `compact` groups, which is one line saying
-"Used 1 Thought" and hides what it names — too much on the line and too little to read. `quiet` hides them entirely.
-The rung between the two was the one that was missing. `tools` carries a placement only, no `details`: a row there is
-either present or not, so the preset must not claim a collapsed state it cannot express.
+- **A stored `timelineDetail` is discarded on read.** Every existing document still carries the field and the
+  booleans that used to feed it, so the read side stays rest-tolerant on purpose:
+  `Persistence.legacy({ general: Persistence.optional(Persistence.legacy({})) })`. A plain struct would reject the
+  whole document rather than the retired keys, and the user would lose every unrelated setting along with them. The
+  regression to watch for is that tolerance disappearing, not a stale value being honoured.
+- **`defaultTimelineDetail` is typed `TimelineDetail`, not `compact`'s literal shape.** The timeline reads every
+  branch of this value, and narrowing it makes the compiler reject code that is correct the moment the density is
+  variable again — four "no overlap" errors in `controller.tsx` the day it was narrowed.
+
+`timelinePresets` itself stays: stories and tests address it, and **26 call sites address it by index**, so a preset
+is appended rather than inserted. `runtime.tsx` reads it for `initialMessageLimit` (40 at `compact`, 20 otherwise).
 
 ### A rewind of a message the server no longer has is not a failure
 

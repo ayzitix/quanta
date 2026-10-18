@@ -67,13 +67,6 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     available: "mobile",
   },
   {
-    tab: "general",
-    label: "settings.timeline.detail",
-    target: "settings-timeline-detail",
-    section: "settings.timeline.title",
-    keywords: "thinking reasoning tools timeline summary detailed",
-  },
-  {
     tab: "appearance",
     label: "settings.general.row.colorScheme.title",
     target: "settings-color-scheme",
