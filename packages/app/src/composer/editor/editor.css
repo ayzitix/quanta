@@ -44,7 +44,7 @@
    corners came out sharp, which is the opposite of the shape. The exponent says what the curve is, the
    radius says how much of it there is. */
 [data-component="composer"] {
-  border-radius: 0 0 18px 18px;
+  border-radius: 18px;
   corner-shape: squircle;
   box-shadow: none;
   /* Tucked under the instruments, which are drawn above it. The instruments are the ones on top now, so
@@ -63,8 +63,8 @@
    pseudo-element there exists to keep a real border from eating the content box and a size is derived from
    that box -- nothing here is, so the simpler property is the right one.
 
-   The radius is the tray's own at full width. An inset was tried and it read as a second, narrower shelf
-   rather than as a continuation, which is the thing this arrangement is for. */
+   Inset by the tray's own radius. Full width was tried and it read as one silhouette, which is the thing
+   this arrangement is against; the inset is what makes it a tray hanging off another one. */
 [data-slot="composer-bar"] {
   /* On top now, so this is the tray that is exposed at its own corners and the text tray below is the one
      tucked under. z-index stays here, at 10, because this is what has to paint in front.
