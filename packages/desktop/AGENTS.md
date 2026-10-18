@@ -524,6 +524,18 @@ only the name is live. Measured, not assumed.
 
 The label stays bare. A trigger inside a frame reads as the content it opens.
 
+**A stretch of thinking is two different rows and the gap must be the same for both.** While the last reasoning
+part is still open the projection _removes_ it from the assistant rows (`!(thinking && entry.content === lastContent)`)
+and pushes a `TimelineRow.Thinking` in its place; the moment the turn ends that row is gone and the same part is
+an ordinary `AssistantPart`. `Thinking` has no `spacing` field for `Frame`'s classList to match on, so it took no
+`pt-*` at all while its settled self took `pt-3` — a 12px jump the moment the model finished its turn, in the middle
+of the transcript. `Thinking` is in the `pt-3` condition now. Two rows that swap must carry the same geometry; the
+swap is not visible otherwise.
+
+The virtualizer is not the suspect here and was checked before blaming it: `measureElement` reads
+`entry.borderBoxSize` off the ResizeObserver, so its measurement lands before paint, and it has a fallback for
+markdown that settles late. Content growth during streaming is what moves the rows below; that is honest growth.
+
 **A turn is one question and its answer, so `session-turn-list`'s gap never applies inside one.** The user message
 and its assistant rows share a turn container; `gap: 12px` separates _turns_. That is why the gap between the
 bubble and the first assistant row measured 0 while the gap between the thought label and its frame measured 12 —

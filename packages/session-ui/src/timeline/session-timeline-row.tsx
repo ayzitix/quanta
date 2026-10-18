@@ -483,7 +483,14 @@ export function createSessionTimelineRowRenderer(input: {
         // question above it. A turn is one question and its answer, so `session-turn-list`'s gap applies
         // between turns and never inside one: 12px here is the same measure the thought row keeps between its
         // label and the reasoning, so the two distances in a turn are one distance.
-        "pt-3": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === undefined,
+        //
+        // The live reasoning row carries it too, and that is the point: a stretch of thinking is a `Thinking`
+        // row while it streams and an ordinary `AssistantPart` the moment the turn ends, and `Thinking` has no
+        // `spacing` field for this list to match on. Without it the row sat at 0 while streaming and moved down
+        // 12px on completion -- a jump in the middle of the transcript, from the model finishing its turn.
+        "pt-3":
+          (Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === undefined) ||
+          Predicate.isTagged(props.row, "Thinking"),
         "pt-2": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "tool",
         "pt-4": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "content",
         "pt-6": Predicate.isTagged(props.row, "Error"),
