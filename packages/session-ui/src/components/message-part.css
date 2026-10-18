@@ -183,11 +183,13 @@
     background: var(--v2-background-bg-base);
     border: 1px solid var(--v2-alpha-light-12);
     padding: 8px 12px;
-    /* Rounder than the 8px Cursor measures, and a squircle rather than the ellipse that number implies. At this
-       height 8px is a rounding and 12px is a shape, and a squircle at 12 is the one that reads as deliberate
-       rather than as a default. The curve is declared here, at rest, because the editing state inherits it --
-       declaring it only there made the box change its corner curve the moment it opened. */
-    border-radius: 12px;
+    /* A squircle, not the ellipse that a bare radius implies, and rounder than the 8px the radius alone would
+       suggest. `corner-shape` changes the curve's continuity, not its size, so a radius that reads as a plain
+       rounded rectangle on an ellipse curve reads as a soft box on a squircle one. 14px on a ~40px line is
+       about half the height -- far enough to be a shape, short of the 20px where it becomes a pill. The curve
+       is declared here, at rest, because the editing state inherits it: declaring it only there changed the
+       corner shape the moment the box opened. */
+    border-radius: 14px;
     corner-shape: squircle;
     transition:
       background-color 200ms ease,
@@ -1244,10 +1246,6 @@
 
 :root body [data-component="user-message"] {
   font-weight: 440;
-
-  [data-slot="user-message-text"] {
-    background: var(--v2-background-bg-layer-01);
-  }
 
   [data-slot="user-message-comments"] {
     display: flex;
