@@ -48,6 +48,53 @@
     margin-top: 12px;
   }
 
+  /* The label is the trigger and nothing else: bare, with no box, because a trigger in a frame reads as the
+     content. It is shrink-wrapped on purpose -- the row around it is a container the eye passes over, and a
+     target that spans its width makes the empty space beside it feel live. */
+  [data-component="reasoning-part"] .reasoning-collapsible {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    /* The same number as the gap between turns above, so the distance from the question to the answer and the
+       distance from the label to the reasoning behind it are one measurement rather than two that happen to
+       look close. */
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  [data-component="reasoning-part"] .reasoning-collapsible-trigger {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+  }
+
+  /* An outline and no fill: the transcript reads through it, so the frame reads as a boundary rather than a
+     card sitting in the answer.
+
+     `corner-shape: squircle` is the shape -- it is the continuous iOS curve, exponent 2 -- and the radius is what
+     makes it visible. Raising the exponent past it does not sharpen a squircle, it replaces it with a rounded
+     square: 3 reads as a cut corner and 4 as a square. The radius is the other lever and the safe one, because
+     `corner-shape` clamps an oversized radius back to an ellipse -- 9999px under it is a pill, not a squircle.
+     24px stays under half the box's shortest side even on a single line of reasoning, which is where clamping
+     would start; Chromium reports the shape back as `superellipse(2)`, which is how it should read. */
+  [data-component="reasoning-part"] [data-slot="session-turn-thinking-body"] {
+    width: fit-content;
+    max-width: 100%;
+    padding: 10px 14px;
+    border-radius: 24px;
+    corner-shape: squircle;
+    border: 1px solid var(--v2-alpha-light-12);
+  }
+
   [data-slot="session-turn-thinking"] {
     display: flex;
     align-items: center;
@@ -277,6 +324,9 @@
   }
 }
 
+/* Turn to turn. 24px read as a section break between the question and the answer it asked for, which is
+   what it was set to; at the density the timeline now renders at it is a gap the reader crosses on every
+   exchange. 12px still separates the turns and no longer splits the exchange in two. */
 [data-slot="session-turn-list"] {
-  gap: 24px;
+  gap: 12px;
 }

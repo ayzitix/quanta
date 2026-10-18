@@ -503,6 +503,38 @@ The row is `placement: "separate"` and that is load-bearing: `contentGroupType` 
 only when `placement === "grouped"`, which is what produced "Used 1 Thought". Nothing else in the timeline changed —
 tools still group, and the notices that end a segment still do.
 
+**The label is the trigger, and nothing else.** `AssistantReasoningContent` is a bare `Collapsible`, not a
+`BasicTool`. `BasicTool` puts its trigger in a row that stretches the full width of the turn, so the empty
+space beside the label answered to a click as well — the opposite of what was wanted. Two fixes were tried and
+one is worth not retrying: `pointer-events: none` on the trigger with `auto` on the label takes the label out of
+reach _along with_ the empty space, because the button is the thing that receives the click; narrowing the
+trigger's width instead (`width: fit-content`, `flex: 0 0 auto`) leaves the label at 52px inside a 52px row and
+only the name is live. Measured, not assumed.
+
+**The frame around the reasoning is an outline and no fill**, 1px at `--v2-alpha-light-12`, and its corner is
+`corner-shape: squircle` at 24px. Both numbers were argued into place and the argument matters:
+
+- **The exponent is not a sharpening knob.** `squircle` _is_ exponent 2, the continuous iOS curve; `3` reads as
+  a rounded square and `4` as a square with cut corners. Raising it replaces the shape rather than tightening
+  it, and `superellipse(4)` was tried and rejected.
+- **The radius is the lever, and it is clamped.** An oversized radius under `corner-shape` falls back to an
+  ellipse — `9999px` under it is a pill, not a squircle. 24px stays under half the shortest side of a single
+  line of reasoning, which is where clamping begins. Chromium reports the resolved value as `superellipse(2)`,
+  which is the check worth making when the corner is wrong.
+
+The label stays bare. A trigger inside a frame reads as the content it opens.
+
+**A turn is one question and its answer, so `session-turn-list`'s gap never applies inside one.** The user message
+and its assistant rows share a turn container; `gap: 12px` separates _turns_. That is why the gap between the
+bubble and the first assistant row measured 0 while the gap between the thought label and its frame measured 12 —
+two distances that were declared equal and were not. The first assistant row of a turn carries `pt-3` now, which
+is where that distance actually lives. Measuring the two rects is the only way to see this; the declared numbers
+agree with each other and both were wrong.
+
+**The user message carries no timestamp.** `stamp`, `timefmt` and the `user-message-meta-*` markup went with it.
+The agent and model names had already gone from that line for the same reason: it was a metadata row competing
+with the message, and one number is not worth a line.
+
 ### A rewind of a message the server no longer has is not a failure
 
 `revert.stage` answers `MessageNotFoundError` when the message is already gone from the session — the state the rewind

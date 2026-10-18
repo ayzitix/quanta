@@ -26,6 +26,7 @@ import { Menu } from "@opencode/ui/menu"
 import { Icon } from "@opencode/ui/icon"
 import { Button } from "@opencode/ui/button"
 import { TextShimmer } from "@opencode/ui/text-shimmer"
+import { Collapsible } from "@opencode/ui/collapsible"
 import { BasicTool } from "../components/basic-tool"
 import { Card } from "@opencode/ui/card"
 import type {
@@ -327,8 +328,6 @@ export function CurrentUserMessageDisplay(props: {
   const inlineFiles = createMemo(() => (props.message.files ?? []).filter((file) => !!file.mention))
   const agents = createMemo(() => props.message.agents ?? [])
   const comments = createMemo(() => props.comments ?? [])
-  const timefmt = createMemo(() => new Intl.DateTimeFormat(i18n.locale(), { timeStyle: "short" }))
-  const stamp = createMemo(() => timefmt().format(props.message.time.created))
 
   const copy = async (text: string) => {
     if (!text || !(await writeClipboard(text))) return
@@ -552,18 +551,6 @@ export function CurrentUserMessageDisplay(props: {
                   </div>
                 </Show>
               </div>
-            </div>
-          </Show>
-          {/* The time is a reading, so it stays. The agent and model names went with the buttons: a full-width
-          bubble already names what it ran on once it is open for editing, and a line of metadata under every
-          message competes with the message. */}
-          <Show when={props.text || comments().length > 0 || pending()}>
-            <div data-slot="user-message-copy-wrapper">
-              <span data-slot="user-message-meta-wrap">
-                <span data-slot="user-message-meta-tail" class="text-12-regular text-text-weak cursor-default">
-                  {stamp()}
-                </span>
-              </span>
             </div>
           </Show>
         </Menu.Context.Trigger>
@@ -828,38 +815,32 @@ export function AssistantReasoningContent(props: {
   const [state, setState] = createStore<{ open?: boolean }>({})
   const open = () => props.open ?? state.open ?? props.defaultOpen ?? false
 
-  // One line that says thinking happened, and the reasoning behind it one click away. Not a heading the model
-  // writes: the reasoning it produces carries no headings at all, so a heading line would be empty most turns
-  // and the row would lose its label exactly when there is something to read.
+  // The label is the whole trigger. `BasicTool` put it in a row that stretches the full width of the turn,
+  // which made the empty space beside it answer to a click as well; here the trigger is a button around the
+  // label alone, so the name is the only thing that opens the reasoning.
   return (
     <div data-component="reasoning-part" data-timeline-part-id={props.id}>
-      <BasicTool
-        icon="mcp"
-        status={props.streaming ? "running" : "completed"}
-        compact
-        hasContent
-        allowOpenWhilePending
+      <Collapsible
+        class="reasoning-collapsible"
         open={open()}
         onOpenChange={(value) => {
           setState("open", value)
           props.onOpenChange?.(value)
           props.onContentRendered?.()
         }}
-        trigger={
-          <div data-slot="basic-tool-tool-info-structured">
-            <div data-slot="basic-tool-tool-info-main">
-              <span data-slot="basic-tool-tool-title">
-                <TextShimmer
-                  text={i18n.t(props.streaming ? "ui.sessionTurn.status.thinking" : "ui.message.thought")}
-                  active={props.streaming}
-                />
-              </span>
-            </div>
-          </div>
-        }
       >
-        <PacedMarkdown text={props.content.text} cacheKey={props.id} streaming={props.streaming} />
-      </BasicTool>
+        <Collapsible.Trigger class="reasoning-collapsible-trigger">
+          <TextShimmer
+            text={i18n.t(props.streaming ? "ui.sessionTurn.status.thinking" : "ui.message.thought")}
+            active={props.streaming}
+          />
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <div data-slot="session-turn-thinking-body">
+            <PacedMarkdown text={props.content.text} cacheKey={props.id} streaming={props.streaming} />
+          </div>
+        </Collapsible.Content>
+      </Collapsible>
     </div>
   )
 }

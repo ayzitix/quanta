@@ -479,6 +479,11 @@ export function createSessionTimelineRowRenderer(input: {
       classList={{
         "min-w-0 w-full max-w-full": true,
         "md:max-w-session md:mx-auto": input.centered?.(),
+        // The first assistant row of a turn has no spacing of its own, which left it flush against the
+        // question above it. A turn is one question and its answer, so `session-turn-list`'s gap applies
+        // between turns and never inside one: 12px here is the same measure the thought row keeps between its
+        // label and the reasoning, so the two distances in a turn are one distance.
+        "pt-3": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === undefined,
         "pt-2": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "tool",
         "pt-4": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "content",
         "pt-6": Predicate.isTagged(props.row, "Error"),
