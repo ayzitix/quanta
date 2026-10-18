@@ -23,18 +23,6 @@ const icons = {
     viewBox: "0 0 16 16",
     body: `<path d="M7.5 13.3333H1.5V2H6.83333L8.83333 4H14.8333V6M10.1667 11.3333H15.5M12.8333 8.66667V14" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="square"/>`,
   },
-  branch: {
-    viewBox: "0 0 16 16",
-    body: `<path d="M5.118 5.686V10.314M5.118 5.686C5.97 5.686 6.661 4.995 6.661 4.143C6.661 3.291 5.97 2.6 5.118 2.6C4.266 2.6 3.575 3.291 3.575 4.143C3.575 4.995 4.266 5.686 5.118 5.686ZM5.118 10.314C4.266 10.314 3.575 11.005 3.575 11.857C3.575 12.709 4.266 13.4 5.118 13.4C5.97 13.4 6.661 12.709 6.661 11.857M5.118 10.314C5.97 10.314 6.661 11.005 6.661 11.857M10.882 5.686C11.734 5.686 12.425 4.995 12.425 4.143C12.425 3.291 11.734 2.6 10.882 2.6C10.03 2.6 9.339 3.291 9.339 4.143C9.339 4.995 10.03 5.686 10.882 5.686ZM10.882 5.686V9.457C10.882 10.783 9.807 11.857 8.482 11.857H6.661" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>`,
-  },
-  "branch-out": {
-    viewBox: "0 0 16 16",
-    body: `<path d="M10.4225 3.35355L12.9024 5.83344L10.4225 8.31333" stroke="currentColor"/><path d="M1 12.2852H4.23042C4.89912 12.2852 5.52359 11.951 5.89452 11.3946L9.00783 6.72462C8.37877 6.16823 10.0032 5.83402 10.6719 5.83402H12.9024" stroke="currentColor"/><path d="M8.5 12.2852H14" stroke="currentColor" stroke-linejoin="round"/>`,
-  },
-  "grid-plus": {
-    viewBox: "0 0 16 16",
-    body: `<path d="M13.9948 11.668H9.32812M11.6641 9.33203V13.9987M6.66667 9.33203V13.9987H2V9.33203H6.66667ZM6.66667 2V6.66667H2V2H6.66667ZM13.9948 2V6.66667H9.32812V2H13.9948Z" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="square"/>`,
-  },
   help: {
     viewBox: "0 0 16 16",
     body: `<path d="M6.33345 6.33349V5.00015H9.66679V7.00015L8.00015 8.00015V9.66679M8.27485 11.6819H7.71897M14.4446 8.00011C14.4446 11.5593 11.5593 14.4446 8.00011 14.4446C4.44094 14.4446 1.55566 11.5593 1.55566 8.00011C1.55566 4.44094 4.44094 1.55566 8.00011 1.55566C11.5593 1.55566 14.4446 4.44094 14.4446 8.00011Z" stroke="currentColor" stroke-linecap="square"/>`,
@@ -55,10 +43,6 @@ const icons = {
     viewBox: "0 0 20 20",
     body: `<path d="M18 2H2V10H18V2Z" fill="currentColor" fill-opacity="0.1"/><path d="M2 18H18V10H2V18Z" fill="currentColor" fill-opacity="0.1"/><path d="M2 10V18H18V10M2 10V2H18V10M2 10H18M5 6H9M5 14H9" stroke="currentColor"/>`,
   },
-  menu: {
-    viewBox: "0 0 16 16",
-    body: `<path d="M2 8H14M2 4.664H14M2 11.336H14" stroke="currentColor"/>`,
-  },
   plus: {
     viewBox: "0 0 16 16",
     body: `<path d="M8 2.88867V13.1109" stroke="currentColor" stroke-linejoin="round"/><path d="M2.88867 8H13.1109" stroke="currentColor" stroke-linejoin="round"/>`,
@@ -75,10 +59,6 @@ const icons = {
     viewBox: "0 0 16 16",
     body: `<path d="M3.53613 8.17857L6.39328 11.75L12.4647 4.25" stroke="currentColor"/>`,
   },
-  monitor: {
-    viewBox: "0 0 16 16",
-    body: `<path d="M4.05559 9.38889H0.500007C0.500007 9.38889 0.500017 8.59298 0.500017 7.61112V2.27778C0.500017 1.29594 0.500102 0.5 0.500102 0.5H13.3889C13.3889 0.5 13.3889 1.29594 13.3889 2.27778V7.61112C13.3889 8.59298 13.3889 9.38889 13.3889 9.38889H9.83336M4.05559 9.38889V11.6111H6.94448H9.83336V9.38889M4.05559 9.38889H9.83336" transform="translate(1.05556 1.94444)" stroke="currentColor"/>`,
-  },
   workspace: {
     viewBox: "0 0 16 16",
     body: `<path d="M2 10.668V14.0013H10.6667M13.9974 10.6667V2H2.66406M13.9974 10.668V14.0013H10.6641M2 10V2H5.33333" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="square"/><path d="M10.6693 10.6654V5.33203H5.33594V10.6654H10.6693Z" fill="currentColor"/>`,
@@ -86,10 +66,6 @@ const icons = {
   "outline-worktree": {
     viewBox: "0 0 16 16",
     body: `<path d="M12 3.11133L14.3885 5.49977L12 7.88822M14.5 5.49972H10.058L5.13456 11.8139M14.5 11.6606L8.5 11.6606M5.50012 11.6597H1.5" stroke="currentColor"/>`,
-  },
-  "outline-trash": {
-    viewBox: "0 0 16 16",
-    body: `<path d="M2.44434 4.22224H13.5554M5.99994 4.22224V2.44446C5.99994 1.95557 5.99992 1.55557 5.99992 1.55557H9.99989C9.99989 1.55557 9.99994 1.95557 9.99994 2.44446V4.22224M6.55545 7.77779L6.7485 11.7778M9.44437 7.77779L9.2513 11.7778M12.1756 6.88891L11.8666 12.7556C11.8168 13.7068 11.7748 14.4445 11.7748 14.4445H4.22511C4.22511 14.4445 4.18392 13.7067 4.13414 12.7556L3.82509 6.88891" stroke="currentColor"/>`,
   },
   close: {
     viewBox: "0 0 20 20",
@@ -118,10 +94,6 @@ const icons = {
   review: {
     viewBox: "0 0 20 20",
     body: `<path d="M7 14.5H13M7 7.99512H10.0049M10.0049 7.99512H13M10.0049 7.99512V5M10.0049 7.99512V11M18 18V2L2 2L2 18H18Z" stroke="currentColor"/>`,
-  },
-  "window-analytics": {
-    viewBox: "0 0 16 16",
-    body: `<path d="M14.5 9.8333V13.5H1.5V2.5H7.1667M9.5 2.5V7.5H14.5V2.5H9.5Z" stroke="currentColor" stroke-miterlimit="10" stroke-linecap="square"/>`,
   },
   "graduation-cap": {
     viewBox: "0 0 16 16",
@@ -199,6 +171,16 @@ const icons = {
     viewBox: "0 0 16 16",
     body: `<path d="M13.1112 13.5555V14.0555H13.6112V13.5555H13.1112ZM2.889 13.5555H2.389L2.389 14.0555H2.889V13.5555ZM3.38901 5.55546L3.38901 5.05546L2.38901 5.05546L2.38901 5.55546L2.88901 5.55546L3.38901 5.55546ZM14.4446 2.44434H14.9446V1.94434L14.4446 1.94434L14.4446 2.44434ZM14.4446 5.55545L14.4446 6.05545L14.9446 6.05545V5.55545H14.4446ZM1.55566 5.55546L1.05566 5.55545L1.05566 6.05546L1.55566 6.05546L1.55566 5.55546ZM1.5557 2.44436L1.5557 1.94436L1.05571 1.94436L1.0557 2.44435L1.5557 2.44436ZM13.1112 5.55546H12.6112V13.5555H13.1112H13.6112V5.55546H13.1112ZM2.889 13.5555H3.389L3.38901 5.55546L2.88901 5.55546L2.38901 5.55546L2.389 13.5555H2.889ZM14.4446 2.44434H13.9446V5.55545H14.4446H14.9446V2.44434H14.4446ZM1.55566 5.55546L2.05566 5.55547L2.0557 2.44436L1.5557 2.44436L1.0557 2.44435L1.05566 5.55545L1.55566 5.55546ZM6.22234 8.22213V8.72213H9.7779V8.22213V7.72213H6.22234V8.22213ZM13.1112 13.5555V13.0555H2.889V13.5555V14.0555H13.1112V13.5555ZM1.5557 2.44436L1.5557 2.94436L14.4446 2.94434L14.4446 2.44434L14.4446 1.94434L1.5557 1.94436L1.5557 2.44436ZM14.4446 5.55545L14.4446 5.05545L1.55566 5.05546L1.55566 5.55546L1.55566 6.05546L14.4446 6.05545L14.4446 5.55545Z" fill="currentColor"/>`,
   },
+  // Solar's artwork is spread **last** so a name it defines wins over the hand-drawn entry above. The order
+  // is load-bearing and reads backwards from what looks tidy: spread first, every pre-existing name kept its
+  // original artwork and only the names Solar introduces changed, which is exactly what it did the first time.
+  // The sets stay separate rather than merged in place so the boundary stays a readable list.
+  ...solar,
+  // Solar's artwork is spread **last** so a name it defines wins over the hand-drawn entry above. The order
+  // is load-bearing and reads backwards from what looks tidy: spread first, every pre-existing name kept its
+  // original artwork and only the names Solar introduces changed, which is exactly what it did the first time.
+  // The sets stay separate rather than merged in place so the boundary stays a readable list.
+  ...solar,
   // Solar's artwork is spread **last** so a name it defines wins over the hand-drawn entry above. The order
   // is load-bearing and reads backwards from what looks tidy: spread first, every pre-existing name kept its
   // original artwork and only the names Solar introduces changed, which is exactly what it did the first time.
