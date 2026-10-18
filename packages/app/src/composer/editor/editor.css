@@ -36,8 +36,16 @@
    `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
    override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
    one is something a later rule can replace without unwinding this file. */
+/* Pronounced, like the instruments' tray below it: exponent 2, which is the squircle itself, and a radius
+   long enough to read as a curve rather than a small round. 18px on a 42px tray is clear of the clamp --
+   `corner-shape` falls back to an ellipse past half the shortest side, so 21px is the ceiling here.
+
+   Raising the exponent is not how a corner gets rounder; it straightens it. That was tried at 3 and the
+   corners came out sharp, which is the opposite of the shape. The exponent says what the curve is, the
+   radius says how much of it there is. */
 [data-component="composer"] {
-  border-radius: 10px;
+  border-radius: 18px;
+  corner-shape: squircle;
   box-shadow: none;
   /* Above the instruments' tray, which is drawn behind it. Nothing else in the composer stacks against
      this, so a single level is enough and it is declared here rather than as a negative one on the bar:
@@ -55,7 +63,21 @@
    pseudo-element there exists to keep a real border from eating the content box and a size is derived from
    that box -- nothing here is, so the simpler property is the right one. */
 [data-slot="composer-bar"] {
-  border-radius: 0 0 10px 10px;
+  /* Pronounced means a longer curve, not a straighter corner. `squircle` is exponent 2 and it is the shape
+     itself; raising the exponent to 3 was tried here and made the corners sharper, which is the opposite of
+     what a squircle is. What makes it read at this size is the radius: 10px on a shallow 34px shape is a
+     small round either way.
+
+     The radius is bounded by the height, not by taste. `corner-shape` clamps an oversized radius back to
+     an ellipse, and the clamp bites past half the shortest side -- at a 34px visible height that ceiling is
+     17px, so 16px is the most curve this basket can carry and still be a squircle.
+
+     Growing the basket to 48px was tried to buy more curve, and it did: a ceiling of 21px and room for 20px.
+     It was reverted, because a basket that grows to be rounder is not a trade worth making. Past 17px at
+     this height the corner stops being a squircle and becomes a plain ellipse, which is rounder still and
+     is not what this is. */
+  border-radius: 0 0 16px 16px;
+  corner-shape: squircle;
   border: 1px solid var(--v2-border-border-muted);
 }
 
@@ -67,6 +89,10 @@
   content: "";
   position: absolute;
   inset: 0;
+  /* Said again rather than inherited: `corner-shape` does not inherit, so without this the rim is an
+     ellipse at the tray's radius while the tray under it is a squircle. One pixel of mismatch is what makes
+     a rim look fitted for the shape the tray used to be. */
+  corner-shape: inherit;
   border-radius: inherit;
   padding: 1px;
   background-color: var(--v2-border-border-muted);
