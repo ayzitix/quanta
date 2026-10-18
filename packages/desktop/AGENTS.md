@@ -116,6 +116,24 @@ the ramp's shape.
 `neutral[0]`, which with this seed is `#0b0b0b` rather than `#141414`. Do not add a second pin for the same
 surface — one source, and it is `overrides`.
 
+**Known wrong, measured in the running app on 2026-10-18: the page is not `#141414`.** Read the three values
+rather than the token names, because none of them agree:
+
+| what                                     | value     |
+| ---------------------------------------- | --------- |
+| what `html` actually paints              | `#080808` |
+| `--v2-background-bg-base`                | `#121212` |
+| `--background-base`, the pinned override | `#141414` |
+
+So the pin reaches the token and stops there: no rule paints `html` from `--background-base`, and the element that
+does is reading something else entirely. Two consequences worth knowing before you pick a colour. A surface
+described as "the page" and written as `var(--v2-background-bg-base)` is **not** the page — it is 10 units lighter
+than it, which is visible as a faint card edge and nothing more. And `--v2-background-bg-base` and
+`--v2-grey-1000` are the same value (`#121212`), so a component that reaches for one is not reaching for a
+different surface from a component that reaches for the other. Fixing this means finding what paints `html` and
+giving it the pinned value; it is not fixed, deliberately, because nothing depends on the page being `#141414`
+yet and a wrong pin costs more than an unpinned one.
+
 **The light variant is still the original one**, deliberately. Porting the dark side was a separate decision
 from porting the light one, and Cursor ships a light theme we have not read.
 
@@ -385,12 +403,20 @@ the composer's model chip at the leading end and its send disc at the trailing o
 outside dismiss, and the rewrite runs through the machinery that already existed — `revert.to` stages the rewind and
 `controller.composer.submit()` runs the turn.
 
-- **The bubble keeps its shape and loses its padding.** Fill and rim change; `border-radius` and `corner-shape` do not,
-  so the box does not change shape the moment it becomes editable. The padding moves off the bubble entirely and onto
-  its two parts, because one uniform value cannot serve both: the field needs the message's own `8px 12px` or the caret
-  jumps sideways on open, and the controls need a tighter 6px from the corner or they read as hung off it. The tray's
-  pill was tried and reads as a button among messages — the curve and the number travel together, and `9999px` under a
-  squircle clamps back to an ellipse.
+- **Editing changes nothing about the bubble's surface.** No fill, no rim, no radius, no corner curve — the same 14px
+  squircle at the same 12% rim in both states. Each of those was tried as a "this is writable" signal (a raised fill, a
+  recessed rim, a larger radius for the taller box) and every one of them read as a second component rather than as one
+  box becoming editable. What signals it instead is the caret, the controls, and the box growing. The curve is declared
+  **once, at rest**, because declaring `corner-shape` only in the editing rule changed the corner shape the moment the
+  box opened — which is the thing this removes.
+- **`corner-shape` changes the curve's continuity, not its size.** The same 14px radius reads as a plain rounded
+  rectangle under an ellipse and as a soft box under a squircle, so the two changes are not interchangeable and the
+  radius cannot be reasoned about without knowing which one is in effect. `superellipse(2)` in a computed style is the
+  squircle; a `9999px` radius under it clamps straight back to an ellipse, so the two numbers cannot be pushed apart.
+- **The padding moves off the bubble and onto its two parts**, because one uniform value cannot serve both: the field
+  needs the message's own `8px 12px` or the caret jumps sideways on open, and the controls need a tighter 6px from the
+  corner or they read as hung off it. Whichever the bubble picks, one of the two moves. The tray's pill was tried for the
+  editing state and reads as a button among messages.
 - **The controls sit in flow, not floating over the field.** Floating them needed padding to reserve their space, which
   indented the text 36px from both sides and pushed the last line of a wrapped message under the send button. The row is
   `flex items-center gap-1` with `ms-auto` on send: `justify-between` sets the space _between_ children, and with two
