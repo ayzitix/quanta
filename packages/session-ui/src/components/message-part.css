@@ -19,7 +19,7 @@
   color: var(--v2-text-text-base);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   align-self: stretch;
   width: 100%;
   max-width: 100%;
@@ -28,11 +28,10 @@
   [data-slot="user-message-attachments"] {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 8px;
     width: fit-content;
     max-width: min(82%, 64ch);
-    margin-inline-start: auto;
   }
 
   [data-slot="user-message-attachment"] {
@@ -127,12 +126,15 @@
   }
 
   [data-slot="user-message-body"] {
-    width: fit-content;
-    max-width: min(82%, 64ch);
-    margin-inline-start: auto;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    /* `stretch`, not `flex-start`. This is a column flex container, so the cross axis is horizontal and
+       `align-items` is what decides the bubble's width — a flex item with no explicit width shrinks to its
+       content under `flex-start`, and `display: block` on the bubble does nothing about it because it is not
+       a block in that context. `flex-end` gave the old right-aligned chip; `flex-start` gave the same chip on
+       the left. Only `stretch` makes `width: 100%` on the body mean anything. */
+    align-items: stretch;
   }
 
   /* Like the iOS app's Voice badge: on the bubble's top leading corner, ringed in the page background. */
@@ -168,15 +170,25 @@
   }
 
   [data-slot="user-message-text"] {
-    display: inline-block;
+    display: block;
     white-space: pre-wrap;
     word-break: break-word;
     overflow: hidden;
     unicode-bidi: plaintext;
-    background: var(--v2-background-bg-layer-02);
-    border: none;
+    /* The composer tray's surface, rim and curve, so the two boxes on screen are one material rather than two
+       that happen to share a page. `layer-01` is the tray's own fill and `border-muted` is its 8% rim, which is
+       the number Cursor measures on that rim — so the hairline here is the same one the tray draws, not a
+       second value picked for messages. `corner-shape` is declared in CSS rather than as a utility because the
+       `corner-shape-squircle` class is not in this Tailwind build: it compiles and silently does nothing. */
+    background: var(--v2-background-bg-layer-01);
+    border: 1px solid var(--v2-border-border-muted);
     padding: 8px 12px;
-    border-radius: 10px;
+    /* 16px is `--cursor-radius-3xl`, the fourth step of Cursor's own scale, and it is as far round as this box
+       should go: a user message is unbounded in height, so the tray's `9999px` on a ten-line prompt turns the
+       ends into semicircles and reads as a lozenge rather than a bubble. The curve is what makes 16px look
+       like a tray rather than a rectangle — the number alone at this size would still read as a hard corner. */
+    border-radius: 16px;
+    corner-shape: squircle;
     transition:
       background-color 200ms ease,
       color 200ms ease;
@@ -1275,42 +1287,12 @@
   }
 }
 
-:root[data-color-scheme="light"] body [data-component="user-message"] [data-slot="user-message-text"] {
-  background: var(--v2-background-bg-layer-02);
-}
-
-:root
-  body
-  [data-workspace-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  --user-message-mention-prefix-color: var(--v2-blue-300);
-
-  background: var(--v2-background-bg-accent);
-  color: var(--v2-text-text-contrast);
-}
-
-:root body [data-local-session] [data-component="user-message"] [data-slot="user-message-text"] {
-  border-radius: 8px;
-}
-
-:root[data-color-scheme="light"]
-  body
-  [data-local-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  background: var(--v2-blue-100);
-  color: var(--v2-blue-700);
-}
-
-:root[data-color-scheme="dark"]
-  body
-  [data-local-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  background: var(--v2-blue-1200);
-  color: var(--v2-blue-300);
-}
+/* The bubble used to be recoloured by session kind: `bg-accent` for a workspace session, `blue-1200` for a local
+   one, with a 8px radius on the local branch. That was the only signal telling a local session apart from a
+   remote one at a glance, and it is gone: the bubble is the composer tray's own material now, which is what
+   Cursor does -- it has one bubble for every session kind and no colour to read. If the distinction is worth
+   having back it has to be carried by something other than fill, because the fill is what the two boxes on
+   screen now share. */
 
 /* Only delivery animates. A steer can render once before its admission marks it pending, and must not fade from the
    delivered color. */
