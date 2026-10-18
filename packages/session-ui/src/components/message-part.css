@@ -1303,11 +1303,29 @@
   }
 }
 
-/* Editing in place. The bubble keeps its measured chrome -- page-coloured fill, 12% rim, 8px radius -- and only
-   stops being a text node while a rewrite is in progress. The textarea inherits the bubble's padding rather
-   than declaring its own, so switching between the two does not shift the text by a pixel. */
+/* Editing turns the bubble into a field. The two states are different surfaces and Cursor has only one of
+   them: its bubble is a page-coloured box with a 12% rim at 8px, and there is no editable variant to copy. So
+   the editor's geometry is declared here rather than shared, because `editor.css` is scoped to
+   `[data-component="composer"]` and moving the message into that scope would make it a composer. */
 [data-slot="user-message-text"][data-editing] {
   cursor: text;
+  background: var(--v2-background-bg-layer-01);
+  border-color: var(--v2-border-border-muted);
+  /* The bubble drops its padding entirely and each part below takes its own: the text needs the message's own
+     12px inline inset or the line jumps sideways the moment the box opens, and the controls want a tighter
+     6px from the corner than a 12px inline inset would give them. Declaring one uniform value on the bubble
+     cannot serve both -- whichever it picks, one of them moves. */
+  padding: 0;
+  /* A squircle, matching the message's own `corner-shape` at rest, so the box does not change its shape the
+     moment it becomes editable -- only its fill and its rim do. The tray's pill was the alternative and it
+     read as a button among messages. The curve and the number travel together: at these sizes the radius is
+     a consequence of the curve, and `9999px` under a squircle clamps back to an ellipse. */
+  border-radius: 16px;
+  corner-shape: squircle;
+  box-shadow: none;
+  transition:
+    background-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1),
+    border-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
 [data-slot="user-message-edit"] {
@@ -1315,8 +1333,57 @@
   color: inherit;
   letter-spacing: inherit;
   line-height: inherit;
-  padding: 0;
-  min-height: 1lh;
+  /* The message's own 8/12 padding, moved onto the field, so the caret sits exactly where the text was.
+     The controls sit in flow below the field rather than floating over it, so nothing here reserves room
+     for them -- that reservation is what pushed the last line of a wrapped message under the send button. */
+  padding: 8px 12px 0;
+  /* Two lines as a floor, so the field is a field rather than a grown one-liner. The controls below take
+     another 28px, and at one line the tray was a strip with two buttons under a sentence. `field-sizing`
+     still grows it from here. */
+  min-height: 2lh;
   max-height: 320px;
   field-sizing: content;
+}
+
+[data-slot="user-message-editor-actions"] {
+  margin-block-start: 0;
+  padding: 0 6px 6px;
+}
+
+/* The two controls under the field, carrying the composer's chrome -- the white send disc, the 8% grey its
+   neighbour takes, and 9999px on both, which is the tray's send radius rather than its 6px icon-button
+   radius. Values are copied from `editor.css` rather than keyed off the composer's `data-action`: those
+   hooks are global and unlayered, so reusing them put the tray's 6px radius here and made this button the
+   first document match for the lookup the attach button has to make.
+
+   `icon-button-v2` is in the selector for the cascade, not for the button. This file is imported into
+   `layer(components)` and `icon-button.css` is injected from its own module into the same layer, so an
+   equal-specificity rule loses to whichever lands later in the document -- and the component's does. Three
+   attribute selectors settle it without an `!important` and without moving one file out of the layer the rest
+   of the message styles live in. The composer's own rules are unlayered and win for the opposite reason. */
+[data-slot="user-message-editor-actions"] [data-component="icon-button-v2"][data-action="message-edit-attach"] {
+  background-color: var(--v2-alpha-light-8);
+  color: var(--v2-text-text-base);
+  border-radius: 9999px;
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="icon-button-v2"][data-action="message-edit-attach"]:is(:hover, [data-state="hover"]) {
+  background-color: var(--v2-alpha-light-12);
+}
+
+[data-slot="user-message-editor-actions"] [data-component="icon-button-v2"][data-action="message-edit-submit"] {
+  background-color: var(--v2-text-text-contrast);
+  color: var(--v2-background-bg-base);
+  border-radius: 9999px;
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="icon-button-v2"][data-action="message-edit-submit"]:is(:hover, [data-state="hover"]) {
+  background-color: color-mix(in srgb, var(--v2-text-text-contrast) 80%, transparent);
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="icon-button-v2"][data-action="message-edit-submit"]:disabled {
+  opacity: 0.45;
 }

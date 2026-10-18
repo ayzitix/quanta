@@ -456,28 +456,76 @@ export function CurrentUserMessageDisplay(props: {
                 </>
               }
             >
-              <textarea
-                ref={draftInput}
-                data-slot="user-message-edit"
-                class="w-full resize-none bg-transparent outline-none"
-                rows={1}
-                value={draft()}
-                onInput={(event) => {
-                  setDraft(event.currentTarget.value)
-                  event.currentTarget.style.height = "auto"
-                  event.currentTarget.style.height = `${event.currentTarget.scrollHeight}px`
+              <div
+                data-slot="user-message-editor"
+                class="flex flex-col"
+                onFocusOut={(event) => {
+                  // Focus leaving the editor closes it. The containment test is what keeps the send button
+                  // usable: clicking it moves focus within the wrapper, and only focus that lands outside is
+                  // a dismissal.
+                  if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
+                  cancelEditing()
                 }}
-                onKeyDown={(event) => {
-                  if (event.key === "Escape") {
-                    event.preventDefault()
-                    cancelEditing()
-                  }
-                  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
-                    event.preventDefault()
-                    void resend()
-                  }
-                }}
-              />
+              >
+                <textarea
+                  ref={draftInput}
+                  data-slot="user-message-edit"
+                  class="w-full resize-none bg-transparent outline-none"
+                  rows={1}
+                  value={draft()}
+                  onInput={(event) => setDraft(event.currentTarget.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault()
+                      cancelEditing()
+                    }
+                    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                      event.preventDefault()
+                      void resend()
+                    }
+                  }}
+                />
+                {/* Both controls carry their own `data-action` rather than the composer's, because those hooks are global
+                    and unlayered: `composer-attach` would put the tray's 6px radius on a control meant to be
+                    round, and `composer-submit` made this button the first document match for a lookup that
+                    has to reach the tray's. The chrome is copied from the tray's rules instead -- see
+                    `message-part.css`. A cancel button is deliberately absent: losing focus leaves the
+                    editor, and a control that does what a click already does is a second way out of the same
+                    place. */}
+                <div data-slot="user-message-editor-actions" class="flex items-center justify-between">
+                  <IconButton
+                    data-action="message-edit-attach"
+                    icon={<Icon name="plus" />}
+                    variant="ghost-muted"
+                    size="normal"
+                    class="size-7"
+                    aria-label={i18n.t("ui.message.attachToPrompt")}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      // Delegates to the composer's own attach control rather than opening a second menu: every
+                      // command in that menu edits the composer draft, which is the draft this editor writes
+                      // through, so one menu is right and a copy would drift. It is the one piece here that
+                      // reaches outside its component, and it is what a shared menu component would replace.
+                      document.querySelector<HTMLButtonElement>('[data-action="composer-attach"]')?.click()
+                    }}
+                  />
+                  <IconButton
+                    data-action="message-edit-submit"
+                    icon={<Icon name="arrow-up" />}
+                    variant="ghost"
+                    size="normal"
+                    class="size-7 rounded-full p-1"
+                    disabled={state.reverting || !draft().trim()}
+                    aria-label={i18n.t("ui.message.resendMessage")}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      void resend()
+                    }}
+                  />
+                </div>
+              </div>
             </Show>
           </div>
         </div>
@@ -522,29 +570,6 @@ export function CurrentUserMessageDisplay(props: {
                 void updatePending("remove")
               }}
               aria-label={i18n.t("ui.message.deletePending")}
-            />
-          </Show>
-          <Show when={state.editing}>
-            <MessageActionButton
-              icon="xmark"
-              label={i18n.t("ui.message.cancelEdit")}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation()
-                cancelEditing()
-              }}
-              aria-label={i18n.t("ui.message.cancelEdit")}
-            />
-            <MessageActionButton
-              icon="arrow-up"
-              label={i18n.t("ui.message.resendMessage")}
-              disabled={state.reverting || !draft().trim()}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation()
-                void resend()
-              }}
-              aria-label={i18n.t("ui.message.resendMessage")}
             />
           </Show>
           <Show when={props.actions?.revert && !pending() && !state.editing}>
