@@ -361,6 +361,12 @@ function MessageTimelineView(
       return false
     const content = assistant?.content.at(-1)
 
+    // Reasoning says the same thing this row says. The projection moves an unfinished stretch of thinking into
+    // its own `Thinking` row inside the timeline, so showing "Working" underneath it puts two live indicators
+    // for one fact on screen at once -- and the shift between them is visible in the middle of the turn, not at
+    // the end of it. The text case above is the same suppression for the same reason.
+    if (content?.type === "reasoning") return false
+
     if (
       assistant?.time.completed === undefined &&
       assistant?.time.streamed === undefined &&
