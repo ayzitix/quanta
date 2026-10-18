@@ -264,6 +264,9 @@ export function CurrentUserMessageDisplay(props: {
   agent: string
   model: SessionMessageAssistant["model"]
   actions?: SessionUserActions
+  /** The model selector, rendered beside the controls while this message is edited. It takes the
+      message's own focus-back rather than naming the composer's field, which is not where focus came from. */
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   comments?: SessionUserComment[]
   references?: SessionUserAttachmentReference[]
   voice?: boolean
@@ -274,6 +277,11 @@ export function CurrentUserMessageDisplay(props: {
 
   const [state, setState] = createStore({ copied: false, reverting: false, updating: false, editing: false })
   const [draft, setDraft] = createSignal(props.text)
+  // Built once, not per render. A component node written straight into JSX is constructed again on every pass
+  // over the parent's children, which remounts the selector with it -- so its menu closed under the pointer on
+  // the way to picking a model. `draftInput` is read through the ref on each call rather than captured, so the
+  // node does not depend on when the field was mounted.
+  const modelPicker = createMemo(() => props.modelPicker?.({ onClose: () => draftInput?.focus() }))
   let draftInput: HTMLTextAreaElement | undefined
 
   const startEditing = () => {
@@ -492,30 +500,21 @@ export function CurrentUserMessageDisplay(props: {
                     `message-part.css`. A cancel button is deliberately absent: losing focus leaves the
                     editor, and a control that does what a click already does is a second way out of the same
                     place. */}
-                <div data-slot="user-message-editor-actions" class="flex items-center justify-between">
-                  <IconButton
-                    data-action="message-edit-attach"
-                    icon={<Icon name="plus" />}
-                    variant="ghost-muted"
-                    size="normal"
-                    class="size-7"
-                    aria-label={i18n.t("ui.message.attachToPrompt")}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      // Delegates to the composer's own attach control rather than opening a second menu: every
-                      // command in that menu edits the composer draft, which is the draft this editor writes
-                      // through, so one menu is right and a copy would drift. It is the one piece here that
-                      // reaches outside its component, and it is what a shared menu component would replace.
-                      document.querySelector<HTMLButtonElement>('[data-action="composer-attach"]')?.click()
-                    }}
-                  />
+                <div data-slot="user-message-editor-actions" class="flex items-center gap-1">
+                  {/* The model. The composer's own chip, so the unpaid path, the mobile drawer and the provider
+                      grouping are the ones the tray opens -- a second selector would be a second set of rules
+                      for all three. `shrink-0` because the selector's own wrapper is a flex child that grows,
+                      which would float the chip away from the leading edge. */}
+                  <span class="flex shrink-0 items-center">{modelPicker()}</span>
                   <IconButton
                     data-action="message-edit-submit"
                     icon={<Icon name="arrow-up" />}
                     variant="ghost"
                     size="normal"
-                    class="size-7 rounded-full p-1"
+                    // `ms-auto`, not `justify-between`: the row's leading end holds two controls rather than
+                    // one, and `justify-between` would set the space between them instead of pushing the send
+                    // to the far edge.
+                    class="ms-auto size-7 rounded-full p-1"
                     disabled={state.reverting || !draft().trim()}
                     aria-label={i18n.t("ui.message.resendMessage")}
                     onMouseDown={(event) => event.preventDefault()}

@@ -72,6 +72,8 @@ type MessageTimelineProps = {
   screen: SessionScreen
   background: SessionBackground
   actions?: SessionUserActions
+  /** What a user message being edited needs from the app; see `SessionTimelineProps`. */
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   scroll: { overflow: boolean; jump: boolean }
   onResumeScroll: () => void
   setScrollRef: (el: HTMLDivElement | undefined) => void
@@ -304,6 +306,7 @@ function MessageTimelineView(
       }
     },
     actions: props.actions,
+    modelPicker: props.modelPicker,
     reasoningMode: props.data.reasoningMode,
     shellToolDefaultOpen: props.data.shellToolPartsExpanded,
     editToolDefaultOpen: props.data.editToolPartsExpanded,

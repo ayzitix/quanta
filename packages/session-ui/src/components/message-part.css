@@ -1350,6 +1350,20 @@
   padding: 0 6px 6px;
 }
 
+/* The model chip takes the row's contour, the way a chip in the composer's tray takes its own. `editor.css`
+   declares that one scoped to `[data-slot="composer-actions"]`, which this is not, so it is restated here
+   rather than moved into a shared selector -- the two rows are not the same control and the tray's rules carry
+   its tray's insets with them. `button-v2` is in the selector for the same cascade reason as the rules below,
+   and the chip's `small` size would otherwise pin the 4px radius. */
+[data-slot="user-message-editor-actions"] [data-component="button-v2"][data-action="composer-model"] {
+  border-radius: 9999px;
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="button-v2"][data-action="composer-model"]:is(:hover, [data-state="hover"]) {
+  background-color: var(--v2-alpha-light-8);
+}
+
 /* The two controls under the field, carrying the composer's chrome -- the white send disc, the 8% grey its
    neighbour takes, and 9999px on both, which is the tray's send radius rather than its 6px icon-button
    radius. Values are copied from `editor.css` rather than keyed off the composer's `data-action`: those
@@ -1361,17 +1375,6 @@
    equal-specificity rule loses to whichever lands later in the document -- and the component's does. Three
    attribute selectors settle it without an `!important` and without moving one file out of the layer the rest
    of the message styles live in. The composer's own rules are unlayered and win for the opposite reason. */
-[data-slot="user-message-editor-actions"] [data-component="icon-button-v2"][data-action="message-edit-attach"] {
-  background-color: var(--v2-alpha-light-8);
-  color: var(--v2-text-text-base);
-  border-radius: 9999px;
-}
-
-[data-slot="user-message-editor-actions"]
-  [data-component="icon-button-v2"][data-action="message-edit-attach"]:is(:hover, [data-state="hover"]) {
-  background-color: var(--v2-alpha-light-12);
-}
-
 [data-slot="user-message-editor-actions"] [data-component="icon-button-v2"][data-action="message-edit-submit"] {
   background-color: var(--v2-text-text-contrast);
   color: var(--v2-background-bg-base);

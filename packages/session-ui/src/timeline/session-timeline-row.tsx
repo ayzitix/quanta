@@ -66,6 +66,7 @@ export function createSessionTimelineRowRenderer(input: {
   projection: Projection
   presentation: (message: SessionMessageUser) => SessionUserPresentation | undefined
   actions?: SessionUserActions
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   reasoningMode: Accessor<ReasoningMode>
   shellToolDefaultOpen: Accessor<boolean>
   editToolDefaultOpen: Accessor<boolean>
@@ -803,6 +804,7 @@ export function createSessionTimelineRowRenderer(input: {
                       historicalAgent={context()?.agent ?? ""}
                       historicalModel={context()?.model ?? { id: "", providerID: "" }}
                       actions={input.actions}
+                      modelPicker={input.modelPicker}
                     />
                   </div>
                 </div>

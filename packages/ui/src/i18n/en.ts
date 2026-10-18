@@ -248,7 +248,6 @@ const source = {
   "ui.message.copyFullMessage": "Copy full message",
   "ui.message.forkMessage": "Fork to new session",
   "ui.message.revertMessage": "Revert message",
-  "ui.message.attachToPrompt": "Add context",
   "ui.message.resendMessage": "Resend",
   "ui.message.moveToQueue": "Move to queue",
   "ui.message.pending": "Pending",

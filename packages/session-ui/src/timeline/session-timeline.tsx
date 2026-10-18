@@ -1,4 +1,4 @@
-import { For, createMemo } from "solid-js"
+import { For, createMemo, type JSX } from "solid-js"
 import { createStore } from "solid-js/store"
 import type { SessionDocument } from "../document"
 import type { SessionUserActions } from "../actions"
@@ -12,6 +12,10 @@ export type SessionTimelineProps = {
   document: SessionDocument
   presentation?: Record<string, SessionUserPresentation | undefined>
   actions?: SessionUserActions
+  /** The model selector a message being edited offers. A function rather than a node because the
+      message owns focus while it is open, so it has to hand the picker a way back to its own field -- which
+      is not knowable where the node would be built. */
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   reasoningMode?: ReasoningMode
   shellToolDefaultOpen?: boolean
   editToolDefaultOpen?: boolean
@@ -39,6 +43,7 @@ export function SessionTimeline(props: SessionTimelineProps) {
     projection,
     presentation: (message) => props.presentation?.[message.id],
     actions: props.actions,
+    modelPicker: props.modelPicker,
     reasoningMode: () => props.reasoningMode ?? "compact",
     shellToolDefaultOpen: () => props.shellToolDefaultOpen ?? false,
     editToolDefaultOpen: () => props.editToolDefaultOpen ?? false,
