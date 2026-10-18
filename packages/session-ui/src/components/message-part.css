@@ -180,7 +180,10 @@
        and the tonal difference visible in a screenshot is that rim, not a fill. So this declares the page
        colour rather than a layer above it, and the 12% rim is `--cursor-stroke-secondary` rather than the
        8% the composer tray uses -- two different surfaces, two different measured values. */
-    background: var(--v2-background-bg-base);
+    /* A 6% white lift rather than the page colour. It read as flat against a page at the same value -- the
+       box was legible only from its rim, which makes the rim the thing carrying the whole surface -- and 6%
+       is below the composer tray's 8%, so the bubble is lifted without becoming louder than the tray. */
+    background-color: var(--v2-alpha-light-6);
     border: 1px solid var(--v2-alpha-light-12);
     padding: 8px 12px;
     /* A squircle, not the ellipse that a bare radius implies, and rounder than the 8px the radius alone would
@@ -1334,6 +1337,22 @@
   min-height: 2lh;
   max-height: 320px;
   field-sizing: content;
+}
+
+/* The editing field is a `<textarea>`, so a long message brings the browser's scrollbar with it: a grey
+   trough with arrows at both ends, which is the one piece of the message that is visibly not this product.
+   `scrollbar-width` covers Firefox and the `::-webkit-scrollbar` pair covers Chromium and WebKit, which is
+   the same two-step the turn's own scroll containers use.
+
+   The scrollbar is hidden rather than restyled: a `<textarea>` cannot take the `ScrollView` component that
+   draws the app's thumb elsewhere, and a styled native bar still reads as the platform's. Hiding it leaves
+   the field scrolling with no visible chrome, which is what the rest of the message does. */
+[data-slot="user-message-edit"] {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 [data-slot="user-message-editor-actions"] {
