@@ -25,19 +25,19 @@
   );
 }
 
-/* Sharp corners with a soft round, not a pill. `9999px` put a semicircle at both ends at every height, which
-   reads round however small the radius argument is. 8px on a ~44px tray keeps the corner a corner and rounds
-   only the corner itself.
+/* 10px, and the radius is a plain number on purpose. This was `9999px`, which resolves against the box and
+   puts a semicircle at both ends at every height, so the tray read as a capsule rather than a field. A
+   percentage radius was the wrong tool for the same reason: it resolves against the box too.
 
-   No `corner-shape`, deliberately. Four variants of it were tried -- 18px, 8px, `superellipse(3)`, `squircle`
-   on the rim -- and each measured exactly what it declared and each was still not the shape asked for. The
-   exponent is not what was wrong, the shape was, and the default ellipse is the one the rest of the app uses.
+   No `corner-shape`. Four variants were tried here -- 18px, 8px, `superellipse(3)`, and `squircle` carried
+   through to the rim -- and each measured exactly what it declared while looking like a different control
+   rather than the same tray. The default ellipse under a modest radius is the shape the rest of the app uses.
 
    `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
    override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
    one is something a later rule can replace without unwinding this file. */
 [data-component="composer"] {
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: none;
 }
 
@@ -105,10 +105,10 @@
   border-radius: 9999px;
 }
 
-/* The model chip is in the text tray now, so it takes the tray's contour from here rather than from the
-   slot rules above, which reach only the two bar trays. Its own label width follows the session, which is
-   what the measured trailing padding on the editor exists for. */
-[data-slot="composer-actions"] [data-action="composer-model"] {
+/* The model chip is in the bar, so it takes its contour from here rather than from the slot rules above,
+   which reach only the two bar trays. Its own label width follows the session, which is what the measured
+   trailing padding on the editor exists for. */
+[data-slot="composer-controls-tray"] [data-action="composer-model"] {
   height: 24px;
   border-radius: 9999px;
 }

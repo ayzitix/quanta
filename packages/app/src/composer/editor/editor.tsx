@@ -328,16 +328,23 @@ export function ComposerEditor(props: ComposerEditorProps) {
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions.
 
-            `inset-y-0` plus `items-center` rather than a `bottom-*` inset. The row is absolutely
-            positioned, so with only a bottom edge it grows upward from a fixed 8px — and that number is
-            only correct for one tray height. The tray is 42px here (a 22px line box plus the editor's
-            vertical padding), which left the disc 10px from the top and 8px from the bottom. A fixed inset
-            is the same class of bug as a fixed `--composer-actions`: both derive position from a tray
-            measurement that the next font-size change invalidates. Centring needs no number at all. */}
+            `bottom-2` with no height on the row and nothing added to the editor's padding. That is the
+            whole mechanism and every attempt to improve on it broke the tray instead.
+
+            The row is absolutely positioned, so `inset-y-0` would span whatever height a draft had made the
+            tray and `items-center` inside that span re-centres the controls every time a line is added -- they
+            travel down the tray with the text. `bottom-2` anchors to the tray's bottom edge instead, which does
+            not move, and matches the `end-2` the row already had on the right.
+
+            The height is deliberately absent, and no bottom padding was added to compensate. Both were tried:
+            a fixed `h-9` needs the text to clear the row, and clearance on the editor is a reservation the
+            *empty* tray pays for -- measured at 68px where it had been 44px, and it never shrank back. A row
+            with its natural height over the bottom inset overlaps the last line only in a draft long enough
+            to have one, which is what `bottom-2` and the trailing text padding are for. */}
         <div
           ref={actions}
           data-slot="composer-actions"
-          class="absolute end-2 inset-y-0 z-20 flex max-w-[calc(100%-104px)] items-center"
+          class="absolute end-2 bottom-2 z-20 flex max-w-[calc(100%-104px)] items-center"
         >
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
@@ -367,11 +374,6 @@ export function ComposerEditor(props: ComposerEditorProps) {
               this prompt is about to run as, which is a property of the sentence being written, and Cursor
               places it in the same position — trailing side of the tray, send at the far edge. Its width
               follows the session, which is why the row is measured rather than given a fixed width. */}
-          <Show when={props.modelControlsVisible ?? true}>
-            <div class="flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
-              {props.modelControl}
-            </div>
-          </Show>
           <ComposerEditorSubmitButton
             mode={state.mode}
             stopping={view.submit.stopping()}
@@ -472,6 +474,14 @@ export function ComposerEditor(props: ComposerEditorProps) {
                       />
                     </Show>
                   )}
+                </Show>
+                <Show when={props.modelControlsVisible ?? true}>
+                  {/* After the thinking level, not in the text tray. The tray is for what you are writing;
+                      the model and the level are both what the prompt will run as, and they belong together
+                      in the bar where the pair reads as one row of instruments. */}
+                  <div class="flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
+                    {props.modelControl}
+                  </div>
                 </Show>
               </div>
               <Show when={props.barSlot}>
