@@ -271,6 +271,12 @@ function MenuRoot(props: MenuProps) {
 
 export interface MenuContextProps extends ComponentProps<typeof ContextMenu> {
   appearance?: MenuAppearance
+  /**
+   * Kobalte's root renders a div and already forwards this; its own props type just does not say so. A context
+   * menu wrapped around layout that already exists needs it — `display: contents` to leave the box alone is the
+   * reason it comes up.
+   */
+  class?: string
 }
 
 function MenuContextRoot(props: MenuContextProps) {

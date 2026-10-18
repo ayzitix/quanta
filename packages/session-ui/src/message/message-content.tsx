@@ -271,7 +271,6 @@ export function CurrentUserMessageDisplay(props: {
   references?: SessionUserAttachmentReference[]
   voice?: boolean
 }) {
-  const data = useData()
   const dialog = useDialog()
   const i18n = useI18n()
 
@@ -327,23 +326,7 @@ export function CurrentUserMessageDisplay(props: {
   const inlineFiles = createMemo(() => (props.message.files ?? []).filter((file) => !!file.mention))
   const agents = createMemo(() => props.message.agents ?? [])
   const comments = createMemo(() => props.comments ?? [])
-  const model = createMemo(() => modelLabel(data, i18n, props.model))
   const timefmt = createMemo(() => new Intl.DateTimeFormat(i18n.locale(), { timeStyle: "short" }))
-
-  // Mobile shows the current agent and model in the composer and switch notices, so repeating them per message is noise.
-  const mobile = createMediaQuery("(max-width: 767px)")
-
-  const metaHead = createMemo(() => {
-    const agent = props.agent
-    const pendingLabel = waiting() ? i18n.t("ui.message.pending") : ""
-
-    if (mobile()) return pendingLabel
-
-    return [pendingLabel, agent ? agent[0]?.toUpperCase() + agent.slice(1) : "", model()]
-      .filter(Boolean)
-      .join("\u00A0\u00B7\u00A0")
-  })
-
   const stamp = createMemo(() => timefmt().format(props.message.time.created))
 
   const copy = async (text: string) => {
@@ -423,218 +406,169 @@ export function CurrentUserMessageDisplay(props: {
     </Show>
   )
 
+  // The actions live in a right-click window rather than in a row under the message. A full-width bubble with a
+  // control strip under it gives every message two things to look at, and only one of them is the message. What
+  // is left below is the time, which is a reading and not a control.
+  //
+  // `class="contents"` because Kobalte's root is a div and this component's root is a flex column: without it
+  // the wrapper becomes a flex item and the attachments stop sharing the column.
+  const actions = () => (
+    <Menu.Context.Portal>
+      <Menu.Context.Content class="menu-v2-squircle">
+        <Show when={pending()}>
+          <Menu.Item onSelect={() => void updatePending("queue")}>{i18n.t("ui.message.moveToQueue")}</Menu.Item>
+          <Menu.Item onSelect={() => void updatePending("remove")}>{i18n.t("ui.message.deletePending")}</Menu.Item>
+          <Menu.Separator />
+        </Show>
+        <Show when={props.actions?.revert && !pending() && !state.editing}>
+          <Menu.Item disabled={state.reverting} onSelect={() => void revert()}>
+            {i18n.t("ui.message.revertMessage")}
+          </Menu.Item>
+        </Show>
+        {/* Revert rewinds the session; copy only reads the text. One separator, because they are not two
+            operations and a reader should not have to work out which is which from the order. */}
+        <Show when={(props.actions?.revert && !pending() && !state.editing) || pending()}>
+          <Menu.Separator />
+        </Show>
+        <Show when={props.text}>
+          <Menu.Item onSelect={() => void copy(props.text)}>{i18n.t("ui.message.copyMessage")}</Menu.Item>
+        </Show>
+        <Show when={props.voice}>
+          <Menu.Item onSelect={() => void copy(props.message.text)}>{i18n.t("ui.message.copyFullMessage")}</Menu.Item>
+        </Show>
+      </Menu.Context.Content>
+    </Menu.Context.Portal>
+  )
+
   return (
-    <div
-      data-component="user-message"
-      data-pending={waiting() ? "true" : undefined}
-      data-timeline-part-id={props.text ? `${props.message.id}:text:0` : undefined}
-    >
-      {renderAttachments()}
-      <Show
-        when={props.text}
-        fallback={
-          <Show when={comments().length > 0}>
-            <UserMessageComments comments={comments()} bounded={false} />
-          </Show>
-        }
+    <Menu.Context modal={false} class="contents">
+      <div
+        data-component="user-message"
+        data-pending={waiting() ? "true" : undefined}
+        data-timeline-part-id={props.text ? `${props.message.id}:text:0` : undefined}
       >
-        <div data-slot="user-message-body" data-voice={props.voice ? "true" : undefined}>
-          <Show when={props.voice}>
-            <div data-slot="user-message-voice" role="img" aria-label={i18n.t("ui.message.voice")}>
-              <Tooltip appearance="compact" value={i18n.t("ui.message.voice")} placement="top" gutter={4}>
-                <Icon name="waveform" size="small" />
-              </Tooltip>
-            </div>
-          </Show>
-          <div
-            data-slot="user-message-text"
-            dir="auto"
-            data-editing={state.editing ? "true" : undefined}
-            data-comments={comments().length > 0 ? "true" : undefined}
-            onClick={state.editing ? undefined : startEditing}
+        {/* Kobalte binds `contextmenu` to its Trigger, not to the root, so the trigger is what makes the message a
+            right-click target. `contents` on both wrappers leaves the box alone: this component's root is a
+            flex column, and a real wrapper div between it and its children would become the flex item instead.
+            The trigger also calls `preventDefault`, which is what suppresses Electron's own menu here -- and
+            only here, so a right-click in a field still gets the native one. */}
+        <Menu.Context.Trigger class="contents">
+          {renderAttachments()}
+          <Show
+            when={props.text}
+            fallback={
+              <Show when={comments().length > 0}>
+                <UserMessageComments comments={comments()} bounded={false} />
+              </Show>
+            }
           >
-            <Show
-              when={state.editing}
-              fallback={
-                <>
-                  <CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />
-                  <Show when={comments().length > 0}>
-                    <UserMessageComments comments={comments()} bounded />
-                  </Show>
-                </>
-              }
-            >
+            <div data-slot="user-message-body" data-voice={props.voice ? "true" : undefined}>
+              <Show when={props.voice}>
+                <div data-slot="user-message-voice" role="img" aria-label={i18n.t("ui.message.voice")}>
+                  <Tooltip appearance="compact" value={i18n.t("ui.message.voice")} placement="top" gutter={4}>
+                    <Icon name="waveform" size="small" />
+                  </Tooltip>
+                </div>
+              </Show>
               <div
-                data-slot="user-message-editor"
-                class="flex flex-col"
-                onFocusOut={(event) => {
-                  // Focus leaving the editor closes it. The containment test is what keeps the send button
-                  // usable: clicking it moves focus within the wrapper, and only focus that lands outside is
-                  // a dismissal.
-                  if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
-                  cancelEditing()
-                }}
+                data-slot="user-message-text"
+                dir="auto"
+                data-editing={state.editing ? "true" : undefined}
+                data-comments={comments().length > 0 ? "true" : undefined}
+                onClick={state.editing ? undefined : startEditing}
               >
-                <textarea
-                  ref={draftInput}
-                  data-slot="user-message-edit"
-                  class="w-full resize-none bg-transparent outline-none"
-                  rows={1}
-                  value={draft()}
-                  onInput={(event) => setDraft(event.currentTarget.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault()
+                <Show
+                  when={state.editing}
+                  fallback={
+                    <>
+                      <CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />
+                      <Show when={comments().length > 0}>
+                        <UserMessageComments comments={comments()} bounded />
+                      </Show>
+                    </>
+                  }
+                >
+                  <div
+                    data-slot="user-message-editor"
+                    class="flex flex-col"
+                    onFocusOut={(event) => {
+                      // Focus leaving the editor closes it. The containment test is what keeps the send button
+                      // usable: clicking it moves focus within the wrapper, and only focus that lands outside is
+                      // a dismissal.
+                      if (event.currentTarget.contains(event.relatedTarget as Node | null)) return
                       cancelEditing()
-                    }
-                    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
-                      event.preventDefault()
-                      void resend()
-                    }
-                  }}
-                />
-                {/* Both controls carry their own `data-action` rather than the composer's, because those hooks are global
+                    }}
+                  >
+                    <textarea
+                      ref={draftInput}
+                      data-slot="user-message-edit"
+                      class="w-full resize-none bg-transparent outline-none"
+                      rows={1}
+                      value={draft()}
+                      onInput={(event) => setDraft(event.currentTarget.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") {
+                          event.preventDefault()
+                          cancelEditing()
+                        }
+                        if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                          event.preventDefault()
+                          void resend()
+                        }
+                      }}
+                    />
+                    {/* Both controls carry their own `data-action` rather than the composer's, because those hooks are global
                     and unlayered: `composer-attach` would put the tray's 6px radius on a control meant to be
                     round, and `composer-submit` made this button the first document match for a lookup that
                     has to reach the tray's. The chrome is copied from the tray's rules instead -- see
                     `message-part.css`. A cancel button is deliberately absent: losing focus leaves the
                     editor, and a control that does what a click already does is a second way out of the same
                     place. */}
-                <div data-slot="user-message-editor-actions" class="flex items-center gap-1">
-                  {/* The model. The composer's own chip, so the unpaid path, the mobile drawer and the provider
+                    <div data-slot="user-message-editor-actions" class="flex items-center gap-1">
+                      {/* The model. The composer's own chip, so the unpaid path, the mobile drawer and the provider
                       grouping are the ones the tray opens -- a second selector would be a second set of rules
                       for all three. `shrink-0` because the selector's own wrapper is a flex child that grows,
                       which would float the chip away from the leading edge. */}
-                  <span class="flex shrink-0 items-center">{modelPicker()}</span>
-                  <IconButton
-                    data-action="message-edit-submit"
-                    icon={<Icon name="arrow-up" />}
-                    variant="ghost"
-                    size="normal"
-                    // `ms-auto`, not `justify-between`: the row's leading end holds two controls rather than
-                    // one, and `justify-between` would set the space between them instead of pushing the send
-                    // to the far edge.
-                    class="ms-auto size-7 rounded-full p-1"
-                    disabled={state.reverting || !draft().trim()}
-                    aria-label={i18n.t("ui.message.resendMessage")}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      void resend()
-                    }}
-                  />
-                </div>
+                      <span class="flex shrink-0 items-center">{modelPicker()}</span>
+                      <IconButton
+                        data-action="message-edit-submit"
+                        icon={<Icon name="arrow-up" />}
+                        variant="ghost"
+                        size="normal"
+                        // `ms-auto`, not `justify-between`: the row's leading end holds two controls rather than
+                        // one, and `justify-between` would set the space between them instead of pushing the send
+                        // to the far edge.
+                        class="ms-auto size-7 rounded-full p-1"
+                        disabled={state.reverting || !draft().trim()}
+                        aria-label={i18n.t("ui.message.resendMessage")}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void resend()
+                        }}
+                      />
+                    </div>
+                  </div>
+                </Show>
               </div>
-            </Show>
-          </div>
-        </div>
-      </Show>
-      {/* Like the TUI, a pending steer of only attachments still offers its actions. */}
-      <Show when={props.text || comments().length > 0 || pending()}>
-        <div data-slot="user-message-copy-wrapper">
-          <span data-slot="user-message-meta-wrap">
-            <Show when={metaHead()}>
-              <span data-slot="user-message-meta" class="text-12-regular text-text-weak cursor-default">
-                {metaHead()}
+            </div>
+          </Show>
+          {/* The time is a reading, so it stays. The agent and model names went with the buttons: a full-width
+          bubble already names what it ran on once it is open for editing, and a line of metadata under every
+          message competes with the message. */}
+          <Show when={props.text || comments().length > 0 || pending()}>
+            <div data-slot="user-message-copy-wrapper">
+              <span data-slot="user-message-meta-wrap">
+                <span data-slot="user-message-meta-tail" class="text-12-regular text-text-weak cursor-default">
+                  {stamp()}
+                </span>
               </span>
-            </Show>
-            <Show when={metaHead() && stamp()}>
-              <span data-slot="user-message-meta-sep" class="text-12-regular text-text-weak cursor-default">
-                {"\u00A0\u00B7\u00A0"}
-              </span>
-            </Show>
-            <span data-slot="user-message-meta-tail" class="text-12-regular text-text-weak cursor-default">
-              {stamp()}
-            </span>
-          </span>
-          <Show when={pending()}>
-            <MessageActionButton
-              icon="arrow-down-to-line"
-              label={i18n.t("ui.message.moveToQueue")}
-              disabled={state.updating}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation()
-                void updatePending("queue")
-              }}
-              aria-label={i18n.t("ui.message.moveToQueue")}
-            />
-            <MessageActionButton
-              icon="outline-trash"
-              label={i18n.t("ui.message.deletePending")}
-              disabled={state.updating}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation()
-                void updatePending("remove")
-              }}
-              aria-label={i18n.t("ui.message.deletePending")}
-            />
+            </div>
           </Show>
-          <Show when={props.actions?.revert && !pending() && !state.editing}>
-            <MessageActionButton
-              icon="reset"
-              label={i18n.t("ui.message.revertMessage")}
-              disabled={state.reverting}
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={(event) => {
-                event.stopPropagation()
-                void revert()
-              }}
-              aria-label={i18n.t("ui.message.revertMessage")}
-            />
-          </Show>
-          {/* Like the iOS app, a Voice message's copy also offers the full prompt the session received, on right click. */}
-          <Show
-            when={props.voice}
-            fallback={
-              <Show when={props.text}>
-                <MessageActionButton
-                  icon={state.copied ? "check" : "copy"}
-                  label={state.copied ? i18n.t("ui.message.copied") : i18n.t("ui.message.copyMessage")}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    void copy(props.text)
-                  }}
-                  aria-label={state.copied ? i18n.t("ui.message.copied") : i18n.t("ui.message.copyMessage")}
-                />
-              </Show>
-            }
-          >
-            <Menu.Context modal={false}>
-              <Tooltip
-                appearance="compact"
-                value={state.copied ? i18n.t("ui.message.copied") : i18n.t("ui.message.copyMessage")}
-                placement="top"
-                gutter={4}
-              >
-                <Menu.Context.Trigger
-                  as={IconButton}
-                  icon={<Icon name={state.copied ? "check" : "outline-copy"} size="small" />}
-                  size="normal"
-                  variant="ghost-muted"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    void copy(props.text)
-                  }}
-                  aria-label={state.copied ? i18n.t("ui.message.copied") : i18n.t("ui.message.copyMessage")}
-                />
-              </Tooltip>
-              <Menu.Context.Portal>
-                <Menu.Context.Content>
-                  <Menu.Item onSelect={() => void copy(props.text)}>{i18n.t("ui.message.copyMessage")}</Menu.Item>
-                  <Menu.Item onSelect={() => void copy(props.message.text)}>
-                    {i18n.t("ui.message.copyFullMessage")}
-                  </Menu.Item>
-                </Menu.Context.Content>
-              </Menu.Context.Portal>
-            </Menu.Context>
-          </Show>
-        </div>
-      </Show>
-    </div>
+        </Menu.Context.Trigger>
+        {actions()}
+      </div>
+    </Menu.Context>
   )
 }
 
