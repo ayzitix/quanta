@@ -29,6 +29,12 @@ export type SessionUserActions = {
   openAttachment?: (file: PromptFileAttachment) => void
   revert?: (input: { sessionID: string; messageID: string }) => Promise<void> | void
   /**
+   * Replace this message with `text` and run the turn again. Everything after the boundary is reverted, so
+   * this is a rewind rather than an edit -- the same operation the revert button performs, with the composer
+   * draft left alone.
+   */
+  resend?: (input: { sessionID: string; messageID: string; text: string }) => Promise<void> | void
+  /**
    * An input the server has not delivered yet. Like the TUI, a pending steer can move to the queue or be deleted;
    * it shows as waiting only while `steering` behind delivered work or `stranded` by an execution that ended.
    */

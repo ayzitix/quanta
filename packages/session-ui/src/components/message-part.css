@@ -1302,3 +1302,21 @@
     transition: none;
   }
 }
+
+/* Editing in place. The bubble keeps its measured chrome -- page-coloured fill, 12% rim, 8px radius -- and only
+   stops being a text node while a rewrite is in progress. The textarea inherits the bubble's padding rather
+   than declaring its own, so switching between the two does not shift the text by a pixel. */
+[data-slot="user-message-text"][data-editing] {
+  cursor: text;
+}
+
+[data-slot="user-message-edit"] {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  padding: 0;
+  min-height: 1lh;
+  max-height: 320px;
+  field-sizing: content;
+}

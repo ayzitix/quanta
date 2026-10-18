@@ -193,6 +193,31 @@ export function createActiveSessionRegion(input: {
 
   const revertMessage: NonNullable<SessionUserActions["revert"]> = ({ messageID }) => revert.to(messageID)
 
+  // Rewind to this message and re-send it with different text, leaving the composer draft alone. `revert.to`
+  // restores the original prompt into the draft, which is right when the composer is the editing surface and
+  // wrong here: the edit is in the transcript and the draft is unrelated work in progress. So the draft is
+  // captured before and put back after. It cannot simply be skipped -- `restore` is what keeps the message's
+  // attachments and comments attached to the re-sent turn.
+  const resendMessage: NonNullable<SessionUserActions["resend"]> = async ({ messageID, text }) => {
+    const controller = active()
+    if (!controller) return
+
+    const target = prompt.capture()
+    const draft = target.current()
+
+    await revert.to(messageID)
+    // The draft is a list of parts, not a string, so plain text has to become one part with its own offsets.
+    target.set([{ type: "text", content: text, start: 0, end: text.length }])
+    try {
+      // Not awaited and not promisified: `submit` clones the draft synchronously before its first `await`, so
+      // the text is already captured by the time this returns. Waiting on it would only be a lie -- the call
+      // is fire-and-forget, and restoring the draft straight after is what makes it safe.
+      controller.composer.submit()
+    } finally {
+      target.set(draft)
+    }
+  }
+
   const notifyFailed = () => {
     showToast({ title: language.t("common.requestFailed") })
   }
@@ -277,6 +302,11 @@ export function createActiveSessionRegion(input: {
           if (input.session.data.isChild()) return
 
           return revertMessage
+        },
+        get resend() {
+          if (input.session.data.isChild()) return
+
+          return resendMessage
         },
         get pending() {
           if (input.session.data.isChild()) return

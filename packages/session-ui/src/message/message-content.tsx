@@ -86,7 +86,7 @@ function modelLabel(
 
 function MessageActionButton(
   props: Pick<ComponentProps<"button">, "disabled" | "onMouseDown" | "onClick" | "aria-label"> & {
-    icon: "check" | "copy" | "reset" | "arrow-down-to-line" | "outline-trash"
+    icon: "check" | "copy" | "reset" | "arrow-down-to-line" | "outline-trash" | "xmark" | "arrow-up"
     label: JSX.Element
   },
 ) {
@@ -272,7 +272,44 @@ export function CurrentUserMessageDisplay(props: {
   const dialog = useDialog()
   const i18n = useI18n()
 
-  const [state, setState] = createStore({ copied: false, reverting: false, updating: false })
+  const [state, setState] = createStore({ copied: false, reverting: false, updating: false, editing: false })
+  const [draft, setDraft] = createSignal(props.text)
+  let draftInput: HTMLTextAreaElement | undefined
+
+  const startEditing = () => {
+    if (!props.actions?.resend) return
+    // A click that ends a drag is a text selection, not an intent to edit. Collapsing on a click-only press is
+    // what tells them apart, and without this the message could not be selected at all.
+    const selection = document.getSelection()
+    if (selection && !selection.isCollapsed) return
+
+    setDraft(props.text)
+    setState("editing", true)
+    requestAnimationFrame(() => {
+      draftInput?.focus()
+      draftInput?.setSelectionRange(draftInput.value.length, draftInput.value.length)
+    })
+  }
+
+  const cancelEditing = () => setState("editing", false)
+
+  const resend = async () => {
+    if (!props.actions?.resend || state.reverting) return
+    const text = draft()
+    if (!text.trim() || text === props.text) {
+      cancelEditing()
+
+      return
+    }
+
+    setState("reverting", true)
+    try {
+      await props.actions.resend({ sessionID: props.sessionID, messageID: props.message.id, text })
+    } finally {
+      setState("reverting", false)
+      setState("editing", false)
+    }
+  }
 
   const status = createMemo(() => props.actions?.pending?.status(props.message.id))
   const pending = createMemo(() => status() !== undefined && status() !== "queued")
@@ -401,10 +438,46 @@ export function CurrentUserMessageDisplay(props: {
               </Tooltip>
             </div>
           </Show>
-          <div data-slot="user-message-text" dir="auto" data-comments={comments().length > 0 ? "true" : undefined}>
-            <CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />
-            <Show when={comments().length > 0}>
-              <UserMessageComments comments={comments()} bounded />
+          <div
+            data-slot="user-message-text"
+            dir="auto"
+            data-editing={state.editing ? "true" : undefined}
+            data-comments={comments().length > 0 ? "true" : undefined}
+            onClick={state.editing ? undefined : startEditing}
+          >
+            <Show
+              when={state.editing}
+              fallback={
+                <>
+                  <CurrentHighlightedText text={props.text} files={inlineFiles()} agents={agents()} />
+                  <Show when={comments().length > 0}>
+                    <UserMessageComments comments={comments()} bounded />
+                  </Show>
+                </>
+              }
+            >
+              <textarea
+                ref={draftInput}
+                data-slot="user-message-edit"
+                class="w-full resize-none bg-transparent outline-none"
+                rows={1}
+                value={draft()}
+                onInput={(event) => {
+                  setDraft(event.currentTarget.value)
+                  event.currentTarget.style.height = "auto"
+                  event.currentTarget.style.height = `${event.currentTarget.scrollHeight}px`
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") {
+                    event.preventDefault()
+                    cancelEditing()
+                  }
+                  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+                    event.preventDefault()
+                    void resend()
+                  }
+                }}
+              />
             </Show>
           </div>
         </div>
@@ -451,7 +524,30 @@ export function CurrentUserMessageDisplay(props: {
               aria-label={i18n.t("ui.message.deletePending")}
             />
           </Show>
-          <Show when={props.actions?.revert && !pending()}>
+          <Show when={state.editing}>
+            <MessageActionButton
+              icon="xmark"
+              label={i18n.t("ui.message.cancelEdit")}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation()
+                cancelEditing()
+              }}
+              aria-label={i18n.t("ui.message.cancelEdit")}
+            />
+            <MessageActionButton
+              icon="arrow-up"
+              label={i18n.t("ui.message.resendMessage")}
+              disabled={state.reverting || !draft().trim()}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={(event) => {
+                event.stopPropagation()
+                void resend()
+              }}
+              aria-label={i18n.t("ui.message.resendMessage")}
+            />
+          </Show>
+          <Show when={props.actions?.revert && !pending() && !state.editing}>
             <MessageActionButton
               icon="reset"
               label={i18n.t("ui.message.revertMessage")}
