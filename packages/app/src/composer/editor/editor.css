@@ -45,13 +45,18 @@
   z-index: 10;
 }
 
-/* The instruments carry a surface of their own, inset by the tray's own radius and rounded only where it
-   is exposed. Its top edge is square because it sits behind the tray, pulled up 8px by `-mt-2`, and those
+/* The instruments carry a tray of their own, inset by the tray's radius and rounded only where it is
+   exposed. Its top edge is square because it sits behind the text tray, pulled up 8px by `-mt-2`, and those
    8px are never seen -- rounding them would draw a curve under the text field's bottom edge, which is
-   exactly the seam this arrangement exists to remove. */
+   exactly the seam this arrangement exists to remove.
+
+   A contour and no fill, on the same reasoning as the send mark: a second opaque surface under an opaque
+   one reads as a stacked pair of controls. `border` rather than the tray's masked `::before`, because the
+   pseudo-element there exists to keep a real border from eating the content box and a size is derived from
+   that box -- nothing here is, so the simpler property is the right one. */
 [data-slot="composer-bar"] {
   border-radius: 0 0 10px 10px;
-  background-color: var(--v2-alpha-light-8);
+  border: 1px solid var(--v2-border-border-muted);
 }
 
 /* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
