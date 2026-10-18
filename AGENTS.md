@@ -197,10 +197,34 @@ changes what you do" and "otherwise act" pull in opposite directions, and orderi
 because the model reads both. The middle tier is what makes the other two coherent, and it has no precedent in
 any competitor prompt.
 
-Two valves keep widening the ask side from freezing the agent, and both are needed. _A clear, complete request is
-an instruction, not an invitation to negotiate_ governs the moment of decision. _An answer settles the question
-asked; it is not a second approval gate_ governs the turn after, because the first cannot help once a question
-has been asked.
+A question is also sorted by cost rather than by topic: how much a wrong guess would cost decides what goes
+first, independent questions go in one message, and three is a ceiling rather than a target. Without those,
+"ask" degrades into an interrogation and the tiering decides nothing.
+
+**An ambiguous word is a fork, and it outranks everything else.** A name or typo that can be read two ways gets
+asked about before any question about stack, scope or style, and is never silently corrected when the
+correction changes what gets built. This has no counterpart anywhere in the 104 surveyed prompts: `auth` means
+both authentication and authorization, and no competitor treats that as an ambiguity at all. In a head-to-head,
+Claude Code asked what the bug was and missed the fork entirely; this prompt named four candidate subsystems
+from the repository it was standing in. The reason it needs saying is that a typo is not read as a reading —
+the model normalises it as noise — so `two honest readings` alone never fires on one.
+
+**Ask only when the answer is a decision, not when a detail is missing.** `three is a ceiling, not a target` and
+the rule against spending a question on what tier 1 or 2 already covers exist because user research is one-sided:
+every complaint found about these tools is about too many questions, none about too few. Named symptoms are
+"just build it", "I don't care" and "back and forth". Users write explicit "never ask without a consequential
+fork" overrides to fight the default, which is the three tiers restated. Tier 1 defaults to deciding for that
+reason, and the structure should not be tilted toward asking without new evidence that this specific agent
+freezes.
+
+_An answer settles the question asked; it is not a second approval gate_ governs the turn after a question, and it
+is the only valve the prompt carries. It matters more than its length suggests, because the ask side was widened
+this round — an ambiguous word became a fork of its own — and every valve on the other side of the question is
+worthless at the moment of deciding whether to ask it. There was once a second one, _a clear, complete request is
+an instruction rather than an invitation to negotiate_; it was dropped in a rewrite and is not back. Tier 1
+covers it by implication and a six-prompt comparison showed every agent inferring it unprompted, so it is
+absent on evidence rather than by oversight. Re-add it if asking at the moment of decision ever becomes the
+observed failure.
 
 **Reversibility and scope act on disjoint objects.** Scope covers what exists afterwards — commits, branches,
 worktrees, config outside the repository. Reversibility covers how one operation is performed. That is why a
@@ -219,6 +243,15 @@ the user works with daily and rates above the rest for asking well while still e
 tool" from Cursor. Codex contributes the ambition-versus-precision split and brevity-as-a-default; Cursor's newer
 prompt is the counter-example, mandating status narration between tool batches, which is the opposite of what a
 terminal user wants.
+
+How these were validated, because a prompt read by its author proves nothing. Six prompts were run side by side
+— Claude Code, Cursor, Codex, MiMo Code, and this one before and after the fork rule — against identical
+first messages. On "як краще зробити лендинг для кафе?" all six answered instead of building, so the missing
+"a question is not a task" rule was not needed and was not added. On "виправ баг в auth" the results split:
+Claude Code missed the fork, MiMo caught it but offered no options and answered in English, and this prompt
+named four candidate subsystems from the repository. The simulation runs one model through one harness, so it
+isolates the prompt and does not transfer to the real products; treat it as evidence about the text, not about
+the tools.
 
 ## Session Core
 
