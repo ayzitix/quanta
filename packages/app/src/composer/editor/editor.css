@@ -25,17 +25,17 @@
   );
 }
 
-/* A true pill, and the shape is measured rather than argued. Cursor's agent tray resolves
-   `border-radius: 9999px` from `--cursor-radius-full` and carries no `corner-shape`, so both ends are
-   semicircles at every height; Claude Desktop uses 14px on a ~48px tray and Codex 28px with
-   `superellipse(1.5)`, which is the opposite error — three products, three answers, so this is a taste call
-   and the pill was chosen against the field it replaced.
+/* Rounded, but not a pill, and rounded the ordinary way. `corner-shape` was declared here through several
+   rounds of guessing and every one of them was wrong: a pill read round at every height, `squircle` at 18px
+   read round too, 8px read as almost square, and the exponent itself is what finally made it look like a
+   different control rather than the same tray. A plain radius under the default ellipse is the shape the rest
+   of the app uses, and it is what a border-radius is supposed to be. 14px on a ~44px tray.
 
    `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
    override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
    one is something a later rule can replace without unwinding this file. */
 [data-component="composer"] {
-  border-radius: 9999px;
+  border-radius: 14px;
   box-shadow: none;
 }
 
@@ -153,9 +153,10 @@
    ghost token is 4%. Declared here rather than by changing the token because that token belongs to every
    ghost button in the product, and this file is unlayered so it outranks `icon-button.css` regardless.
    Send is excluded: it carries its own fill, and inheriting a ghost hover here would replace it. */
-[data-component="composer"] [data-component="icon-button-v2"]:is(:hover, [data-state="hover"]):not(:disabled):not(
-    [data-expanded]
-  ):not([data-action="composer-submit"]) {
+[data-component="composer"]
+  [data-component="icon-button-v2"]:is(:hover, [data-state="hover"]):not(:disabled):not([data-expanded]):not(
+    [data-action="composer-submit"]
+  ) {
   background-color: var(--v2-alpha-light-8);
 }
 
@@ -270,7 +271,10 @@
   color: var(--v2-background-bg-base);
 }
 
-[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:is(:hover, [data-state="hover"]) {
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:is(
+    :hover,
+    [data-state="hover"]
+  ) {
   background-color: color-mix(in srgb, var(--v2-text-text-contrast) 80%, transparent);
 }
 

@@ -328,20 +328,14 @@ export function ComposerEditor(props: ComposerEditorProps) {
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
             without a higher stack the tray would swallow clicks meant for these actions.
 
-            Pinned to the bottom of the tray, not centred in it. `inset-y-0` with `items-center` was here
-            and it is correct only while the tray is one line tall: the row then spans whatever height the
-            text has made the tray, so a long draft puts the model chip and the send disc halfway down the
-            text, in the middle of a paragraph. They belong to the bottom edge, where the reference has them
-            and where a growing draft leaves them.
+            Pinned to the bottom, not centred in the tray. `inset-y-0` with `items-center` spans whatever
+            height the text has made the tray, so the row sat in the middle of the paragraph with a long
+            draft -- over the text, not beside it. `bottom-2` matches the `end-2` it already had on the right
+            and `h-9` gives the row its own height; `pb-12` on the editor keeps the last line clear of it.
 
-            The row carries its own height rather than growing from a bottom inset, because an inset alone
-            is anchored to a fixed offset and that offset is only right for one tray height -- the same class
-            of bug as a fixed `--composer-actions`. `h-9`, inset `bottom-2` to match the `end-2` it already
-            had on the right, and `pb-12` on the editor keeps the last line out from under it.
-
-            That bottom padding is a plain number on purpose. `--composer-actions` measures how *wide* the row
-            is, which is the right padding's number and nothing else; using it underneath left the tray 186px
-            tall once a draft was cleared, and it never shrank back. */}
+            `pb-12` is a plain number because `--composer-actions` measures how *wide* the row is, which is
+            the right padding's number. Reusing it underneath left the tray 186px tall once a draft was
+            cleared, and it never shrank back. */}
         <div
           ref={actions}
           data-slot="composer-actions"
