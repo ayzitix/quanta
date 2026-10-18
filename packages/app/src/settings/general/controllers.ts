@@ -110,8 +110,6 @@ export function createAppearanceSettingsController() {
       setCode: (value: string) => settings.appearance.setFont(value),
       setTerminal: (value: string) => settings.appearance.setTerminalFont(value),
     },
-    composerGlint: settings.appearance.composerGlint,
-    setComposerGlint: (value: boolean) => settings.appearance.setComposerGlint(value),
   }
 }
 

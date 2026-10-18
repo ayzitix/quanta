@@ -25,16 +25,18 @@
   );
 }
 
-/* A field, not a capsule. 10px on a 40px tray is a corner that is soft but still a corner; the 20px that
-   `min(50%, 20px)` gave was exactly half the height, which turns both ends into semicircles — the shape
-   stopped reading as a rounded rectangle at all. The tray has been a squircle, then a pill, and this is the
-   one that reads as a field at both heights it has to work at: the same number stays a visible corner on the
-   180px maximum, where a percentage radius would have ballooned to 90px and swallowed the ends of every line.
+/* A true pill, and the shape is measured rather than argued. Cursor's agent tray resolves
+   `border-radius: 9999px` from `--cursor-radius-full` and carries no `corner-shape`, so both ends are
+   semicircles at every height; Claude Desktop uses 14px on a ~48px tray and Codex 28px with
+   `superellipse(1.5)`, which is the opposite error — three products, three answers, so this is a taste call
+   and the pill was chosen against the field it replaced.
 
-   Only the radius is here, so the button insets, which are derived from the tray's 40px height, are
-   untouched. The controls inside keep their own contour. */
+   `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
+   override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
+   one is something a later rule can replace without unwinding this file. */
 [data-component="composer"] {
-  border-radius: 10px;
+  border-radius: 9999px;
+  box-shadow: none;
 }
 
 /* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
@@ -57,6 +59,17 @@
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
+  transition: background-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* The entire focus affordance: the rim steps from 8% white to 12% and back over 150ms. This replaces a 3s
+   conic-gradient glint that swept light around the whole perimeter, and the three references agree on the
+   replacement — Cursor moves its stroke 8%→12% over the same 150ms, Claude Desktop moves an inset ring
+   10%→20% over 200ms, and Codex spends its whole focus budget on a transparent outline, i.e. nothing. All
+   three spend their budget on a single alpha step. An animated three-second highlight has no counterpart in
+   any of them, and on an empty screen it was the loudest thing there. */
+[data-component="composer"]:is(:hover, :focus-within)::before {
+  background-color: var(--v2-alpha-light-12);
 }
 
 /* Neither bar tray carries a surface. Each holds one round mark now that the model moved into the text tray,
@@ -71,9 +84,12 @@
 /* The chips take their tray's contour and sit inset inside it, so a hover fill reads as a chip inside the
    tray rather than as the tray itself changing. Each button variant carries a small circular radius, which
    pastes a square block into a round tray the moment it fills, and its own height, which would run the fill
-   into the tray's rim. The rule is unlayered for the reason the glint is: a layered rule loses to the
+   into the tray's rim. The rule is unlayered for the reason the hover rule is: a layered rule loses to the
    Tailwind utility and to the inline height it replaces. `button.css` is layered, so this also beats the
    variant's own radius, which is why the model chip carries no `!rounded-full` to be overridden.
+
+   No `corner-shape`: Cursor's tokens carry none anywhere, and a squircle inset inside a pill tray is two
+   shape languages in one control.
 
    The leading group is not a tray — it draws no surface and carries no rim — but the chip inside it needs
    the same contour, or the row has two contour languages either side of the gap. */
@@ -81,38 +97,66 @@
 [data-slot="composer-controls-tray"] button {
   height: 24px;
   border-radius: 9999px;
-  corner-shape: squircle;
 }
 
 [data-slot="composer-bar-slot-tray"] button {
   border-radius: 9999px;
-  corner-shape: squircle;
+}
+
+/* The model chip is in the text tray now, so it takes the tray's contour from here rather than from the
+   slot rules above, which reach only the two bar trays. Its own label width follows the session, which is
+   what the measured trailing padding on the editor exists for. */
+[data-slot="composer-actions"] [data-action="composer-model"] {
+  height: 24px;
+  border-radius: 9999px;
+}
+
+/* Cursor's model trigger takes no fill on hover at all — it lifts the label from 74% to 100% and stops
+   there, with `transition-duration: 0s`. Every chip in this tray used to fill on hover, which put eight
+   separate blocks into a row whose surface is 6% white; a label that brightens is the cheaper signal and
+   the one the reference uses. */
+[data-component="composer"] [data-action="composer-model"]:hover {
+  background-color: transparent;
+}
+
+[data-component="composer"] [data-action="composer-model"]:hover {
+  color: var(--v2-text-text-base);
 }
 
 /* Three more controls carry the hover fill and so need the contour named, because none of them sits in a slot
    the rules above can reach. The two in the tray are its text buttons — exit-shell and the delivery-mode
-   toggle — which the variant gives a 6px radius, so the pill and the curve are both set here. The project
-   picker is a component button from the new-session stack, out here at 28px with a 4px radius: it was the one
-   control in the composer whose hover fill read as a plain rounded rectangle next to a squircle chip, which
-   is what makes a set of controls look like a set that was not designed together.
+   toggle. The project picker is a component button from the new-session stack, out here at 28px with a 4px
+   radius, which is why it is named separately rather than folded into the 24px rule.
 
    Declared here rather than on the feature's own classes because this file is unlayered and outranks them,
-   and because the radius has to move with the curve — one is the other's consequence at this size, and
+   and because the radius has to move with the height — one is the other's consequence at these sizes, and
    splitting them across two files is how they drift apart. */
 [data-action="composer-exit-shell"],
 [data-action="composer-alternate-delivery"],
 [data-action="prompt-project"] {
   border-radius: 9999px;
-  corner-shape: squircle;
 }
 
-/* The two 24px icon buttons take the tray's contour too, so the shapes inside it are one language rather
-   than a squircle tray with two round studs. Their radius stays `rounded-full`: on a 24px box that clamps to
-   12px, which is also the ceiling a squircle has here, so the shape changes without the number moving. The
-   add button's open state inverts the fill on the same element, so it follows the curve in both states. */
-[data-action="composer-attach"],
+/* The attach mark sits at 6px with no `corner-shape`, matching Cursor's control radius rather than the
+   tray's. The tray is a pill, so a pill-shaped button inside it would be a smaller pill, and two radii
+   where one language is enough reads as two components rather than one control group. Send is the
+   exception and is round, because it is the one filled control on the surface. */
+[data-action="composer-attach"] {
+  border-radius: 6px;
+}
+
 [data-action="composer-submit"] {
-  corner-shape: squircle;
+  border-radius: 9999px;
+}
+
+/* The two marks take a fill on hover, and Cursor's is 8% white — the same step as the rim, where the shared
+   ghost token is 4%. Declared here rather than by changing the token because that token belongs to every
+   ghost button in the product, and this file is unlayered so it outranks `icon-button.css` regardless.
+   Send is excluded: it carries its own fill, and inheriting a ghost hover here would replace it. */
+[data-component="composer"] [data-component="icon-button-v2"]:is(:hover, [data-state="hover"]):not(:disabled):not(
+    [data-expanded]
+  ):not([data-action="composer-submit"]) {
+  background-color: var(--v2-alpha-light-8);
 }
 
 /* The effort window takes the shared squircle menu language — flat, a 20px squircle, the tray's hairline rim —
@@ -205,28 +249,33 @@
   color: var(--v2-text-text-muted);
 }
 
-/* Send is the one mark in the tray whose weight depends on whether it can act. `canSubmit` drives the
-   button's `disabled`, so an empty composer dims the glyph to the row's resting tone and a typed one brings
-   it up to full text weight — the mark itself is the highlight, not a fill behind it. A send button that
-   looked armed over an empty field was telling the user it had something to send before it did.
+/* Send is the one filled control on the surface: a white disc with a dark glyph. Codex does exactly this —
+   `bg-primary-solid` at `--gray-fixed-150` with the label inverted — and it is the only saturated object in
+   its tray, everything else being 5-12% alpha. A disc reads as "this is the thing you press" in a way a
+   bare glyph does not, and the inverse glyph is legible on a light fill where a 37%-grey one would vanish.
+
+   The disc is unconditional. Gating it on `canSubmit` was tried and reads wrong: the control appears and
+   disappears as you type, so the tray's one filled object is also the only thing that moves, and at the
+   moment you start typing the thing you are looking at is the thing that appeared. An empty field is
+   communicated by the dimmed glyph instead, which is where the information actually is.
 
    These live here rather than on the trigger because this file is unlayered, and unlayered beats every
-   `@layer` — including Tailwind's `utilities`, which is where a colour class would go. That is the whole
-   reason the stop state below needs an attribute: once the armed and empty colours are declared here, a
-   `text-v2-state-fg-danger` utility on the trigger loses to both of them and the stop mark comes out in the
-   resting tone. Keeping all three in one file keeps that true by construction. Note the direction of the
+   `@layer` — including Tailwind's `utilities`, which is where a colour class would go. That is also why the
+   stop state cannot be a utility: once these are declared here, a `text-v2-state-fg-danger` on the trigger
+   loses to both of them and the stop mark comes out in the resting tone. Note the direction of the
    cascade, because it is easy to get backwards: a colour utility does beat `icon-button.css`'s own `color`
    (verified — adding `text-v2-state-fg-danger` to an untouched `ghost-muted` icon button turns it pink). */
 [data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"] {
-  color: var(--v2-text-text-base);
+  background-color: var(--v2-text-text-contrast);
+  color: var(--v2-background-bg-base);
+}
+
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:is(:hover, [data-state="hover"]) {
+  background-color: color-mix(in srgb, var(--v2-text-text-contrast) 80%, transparent);
 }
 
 [data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:disabled {
-  color: var(--v2-text-text-muted);
-}
-
-[data-action="composer-submit"][data-stopping] {
-  color: var(--v2-state-fg-danger);
+  opacity: 0.45;
 }
 
 [data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"][data-expanded] {
@@ -265,70 +314,6 @@
    fixed number here is what left the thumb stranded between the chip and the send button. */
 [data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
   inset-inline-end: calc(var(--composer-actions, 24px) + 8px);
-}
-
-/* Registered so the angle interpolates: an unregistered custom property would jump instead of sweep,
-   which is what made the earlier pass look like it stalled between iterations. */
-@property --composer-glint-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-/* The tray is flat, so the only affordance is this contour: absent while the field is idle, and a 1px
-   rim that catches the light while it has focus. A conic gradient masked down to the rim travels the
-   whole perimeter and bends around the corners, where a linear sweep only crosses one edge. */
-[data-component="composer"]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background-image: conic-gradient(
-    from var(--composer-glint-angle),
-    transparent 0deg,
-    var(--v2-alpha-light-12) 22deg,
-    var(--v2-alpha-light-40) 45deg,
-    var(--v2-alpha-light-12) 68deg,
-    transparent 90deg
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 150ms ease;
-}
-
-/* Kept well under full white on purpose: at 100% the sweep read as the loudest thing on an empty
-   screen and pulled attention off what the field is for, which is only saying it is ready. */
-[data-component="composer"]:focus-within::after {
-  opacity: 1;
-  animation: composer-tray-glint 3s linear infinite;
-}
-
-@keyframes composer-tray-glint {
-  to {
-    --composer-glint-angle: 360deg;
-  }
-}
-
-/* The appearance setting removes the contour outright rather than dimming it, so switching it off
-   leaves a tray that never animates instead of one whose animation is too faint to notice. */
-:root[data-composer-glint="off"] [data-component="composer"]::after {
-  content: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-component="composer"]:focus-within::after {
-    animation: none;
-    --composer-glint-angle: 45deg;
-  }
 }
 
 @media (hover: hover) {

@@ -254,7 +254,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
             spellcheck={state.mode === "normal"}
             // @ts-expect-error
             autocomplete="off"
-            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-4 text-[13px] font-[440] leading-5 text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
+            class="relative z-10 block min-h-10 w-full whitespace-pre-wrap bg-transparent py-2.5 pe-[calc(var(--composer-actions,44px)+12px)] ps-4 text-[14px] font-[440] leading-[22px] text-v2-text-text-base focus:outline-none [&_[data-mention=file]]:text-syntax-property [&_[data-mention=agent]]:text-syntax-type [&_[data-mention=reference]]:text-syntax-keyword"
             classList={{ "font-mono!": state.mode === "shell", "opacity-50": props.disabled }}
             style={{
               "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined,
@@ -313,7 +313,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 leading pad is a plain field inset now that no button shares the tray's leading edge. */}
             <div
               dir={state.mode === "normal" ? "auto" : "ltr"}
-              class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[calc(var(--composer-actions,44px)+12px)] pt-2.5 text-[13px] font-[440] leading-5 text-v2-text-text-faint/55"
+              class="pointer-events-none absolute inset-x-0 top-0 ps-4 pe-[calc(var(--composer-actions,44px)+12px)] pt-2.5 text-[14px] font-[440] leading-[22px] text-v2-text-text-base/36"
               classList={{ "font-mono!": state.mode === "shell" }}
               style={{ "unicode-bidi": state.mode === "normal" ? "plaintext" : undefined, "text-align": "start" }}
             >
@@ -326,11 +326,18 @@ export function ComposerEditor(props: ComposerEditorProps) {
         </ScrollView>
 
         {/* z-20 clears the contenteditable's z-10: the editor covers the placeholder overlay, and
-            without a higher stack the tray would swallow clicks meant for these actions. */}
+            without a higher stack the tray would swallow clicks meant for these actions.
+
+            `inset-y-0` plus `items-center` rather than a `bottom-*` inset. The row is absolutely
+            positioned, so with only a bottom edge it grows upward from a fixed 8px — and that number is
+            only correct for one tray height. The tray is 42px here (a 22px line box plus the editor's
+            vertical padding), which left the disc 10px from the top and 8px from the bottom. A fixed inset
+            is the same class of bug as a fixed `--composer-actions`: both derive position from a tray
+            measurement that the next font-size change invalidates. Centring needs no number at all. */}
         <div
           ref={actions}
           data-slot="composer-actions"
-          class="absolute end-2 bottom-2 z-20 flex max-w-[calc(100%-104px)] items-center"
+          class="absolute end-2 inset-y-0 z-20 flex max-w-[calc(100%-104px)] items-center"
         >
           <Show when={state.mode === "normal"}>
             <ComposerEditorAlternateDelivery
@@ -355,6 +362,15 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 <Keybind keys={props.exitShellKeybind ?? ["ESC"]} variant="neutral" />
               </span>
             </Button>
+          </Show>
+          {/* The model rides in the text tray at the trailing end, immediately before send. It names what
+              this prompt is about to run as, which is a property of the sentence being written, and Cursor
+              places it in the same position — trailing side of the tray, send at the far edge. Its width
+              follows the session, which is why the row is measured rather than given a fixed width. */}
+          <Show when={props.modelControlsVisible ?? true}>
+            <div class="flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
+              {props.modelControl}
+            </div>
           </Show>
           <ComposerEditorSubmitButton
             mode={state.mode}
@@ -430,15 +446,10 @@ export function ComposerEditor(props: ComposerEditorProps) {
                 one control group when they share a surface, and gap-0.5 keeps it tight without touching. */}
             <div class="ms-auto flex h-7 shrink-0 items-center gap-1">
               <div data-slot="composer-controls-tray" class="flex h-7 shrink-0 items-center gap-0.5 rounded-full px-1">
-                {/* The model sits with the thinking level, not in the tray. Both answer "what is this prompt
-                    about to run as", and keeping them on one row is what makes the bar read as the row of
-                    settings for this message. In the tray the model competed with the sentence it belonged
-                    to and pushed the text out to a measured padding. */}
-                <Show when={props.modelControlsVisible ?? true}>
-                  <div class="flex min-w-0 items-center" inert={view.draftOnly ? true : undefined}>
-                    {props.modelControl}
-                  </div>
-                </Show>
+                {/* The thinking level sits alone in the bar. It was paired with the model here, and both
+                    answer "what will this prompt run as" — but the model names the thing and the level
+                    changes how hard it runs, so they are not the same control. With the model in the text
+                    tray the bar keeps one mark, and the pair reads as a row rather than a cluster. */}
                 <Show when={view.variant} keyed>
                   {(control) => (
                     <Show when={control.options().length > 1}>
@@ -1603,18 +1614,12 @@ export function ComposerEditorSubmitButton(props: {
         type="button"
         disabled={!props.stopping && props.disabled}
         tabIndex={props.mode === "normal" ? undefined : -1}
-        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "enter"} />}
+        icon={<Icon name={props.stopping ? "stop" : props.mode === "shell" ? "arrow-undo-down" : "arrow-up"} />}
         variant="ghost"
-        class="size-6 rounded-full p-1"
-        classList={{
-          // Only the stop state carries a fill. Send used to invert to near-white, which made this the one
-          // solid mark in a tray that is otherwise outlines — it read as a second, more important control
-          // sitting in the field. It now brightens its glyph instead, and only once there is something to
-          // send, so the tray keeps its resting weight until the field means it. The wash is
-          // `state-fg-danger` and not `state-bg-danger`: the latter resolves to red-1200 in dark, which reads
-          // as near-black rather than as a red control.
-          "bg-v2-state-fg-danger/20": props.stopping,
-        }}
+        // size-7, not size-6. The disc is the only filled object on the surface and it has to survive a
+        // 6% tray on a near-black page; at 24px it reads as a mark rather than as the control you press,
+        // and the glyph inside it has no room to be legible at the sizes the icon actually renders.
+        class="size-7 rounded-full p-1"
         aria-label={props.stopping ? props.stopLabel : props.sendLabel}
         onClick={(event) => {
           event.preventDefault()

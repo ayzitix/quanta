@@ -256,31 +256,31 @@
   },
   "dark": {
     "palette": {
-      "neutral": "#12100b",
-      "ink": "#e4e4e4",
-      "primary": "#88c0d0",
-      "accent": "#88c0d0",
-      "success": "#3fa266",
-      "warning": "#f1b467",
-      "error": "#e34671",
-      "info": "#81a1c1",
-      "interactive": "#82D2CE",
-      "diffAdd": "#70b489",
-      "diffDelete": "#fc6b83"
+      "neutral": "#141414",
+      "ink": "#f0f0f0",
+      "primary": "#599CE7",
+      "accent": "#599CE7",
+      "success": "#3FA266",
+      "warning": "#F1B467",
+      "error": "#E34671",
+      "info": "#88C0D0",
+      "interactive": "#599CE7",
+      "diffAdd": "#70B489",
+      "diffDelete": "#FC6B83"
     },
     "overrides": {
-      "text-weak": "#e4e4e45e",
-      "syntax-comment": "#e4e4e45e",
+      "text-weak": "#9a9a9a",
+      "syntax-comment": "#f0f0f099",
       "syntax-keyword": "#82D2CE",
       "syntax-string": "#E394DC",
-      "syntax-primitive": "#EFB080",
+      "syntax-primitive": "#87C3FF",
       "syntax-variable": "#e4e4e4",
-      "syntax-property": "#81a1c1",
+      "syntax-property": "#AAA0FA",
       "syntax-type": "#EFB080",
       "syntax-constant": "#F8C762",
-      "syntax-operator": "#e4e4e4",
-      "syntax-punctuation": "#e4e4e4",
-      "syntax-object": "#e4e4e4",
+      "syntax-operator": "#D6D6DD",
+      "syntax-punctuation": "#D6D6DD",
+      "syntax-object": "#D6D6DD",
       "markdown-heading": "#AAA0FA",
       "markdown-text": "#e4e4e4",
       "markdown-link": "#82D2CE",
@@ -294,10 +294,26 @@
       "markdown-list-enumeration": "#88c0d0",
       "markdown-image": "#88c0d0",
       "markdown-image-text": "#81a1c1",
-      "markdown-code-block": "#e4e4e4"
+      "markdown-code-block": "#e4e4e4",
+      "text-strong": "#f0f0f0",
+      "text-base": "#b8b8b8",
+      "text-weaker": "#666666",
+      "border-weak-base": "#292929",
+      "border-weaker-base": "#212121",
+      "icon-base": "#a7a7a7",
+      "icon-weak-base": "#888888",
+      "surface-raised-base": "#181818",
+      "surface-raised-base-hover": "#292929",
+      "surface-base": "#141414",
+      "surface-base-hover": "#252525",
+      "syntax-critical": "#E34671",
+      "background-base": "#141414",
+      "syntax-diff-unknown": "#B48EAD",
+      "syntax-info": "#81A1C1",
+      "syntax-string-expression": "#E394DC"
     },
     "v2Overrides": {
-      "v2-grey-1000": "#12100bff"
+      "v2-grey-800": "#181818ff"
     }
   }
 }

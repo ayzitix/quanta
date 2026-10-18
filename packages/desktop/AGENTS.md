@@ -97,18 +97,27 @@ for any unknown or missing id, and `loader.ts` treats `oc-2` as _the_ default th
 the palette; its light variant is still the original one, deliberately, so changing the app's dark surface does
 not silently restyle the light one too.
 
-The background is set in two places and both are needed. `dark.palette.neutral` is the seed the v2 resolver
-mixes a whole grey ramp from, so it is what gives the ramp its warmth — set it and the whole neutral scale warms
-together. `dark.v2Overrides["v2-grey-1000"]` pins the one step the user actually sees as the page background,
-because the generated ramp quantises and does not land on an exact requested hex; the seed alone put the
-background at `#110d07` when `#141008` was asked for. Scaling the whole ramp to force the step lands would be
-worse than the pin — a linear per-channel ratio clips the light end to white and flattens grey-100 through
-grey-200 into one step.
+The dark variant is Cursor's. `cursor-dark-color-theme.json` and the `--cursor-*` token layer in
+`workbench.glass.main.js` were read out of `/usr/share/cursor/resources/app` and ported by hand, because there
+is no path that imports them. The page is `#141414` and the raised surface every tray and card sits on is
+`#181818`; the text ramp is `#F0F0F0` at 100/74/60/36% and the icon ramp at 100/66/52/28%, which is the one
+place the two deliberately diverge — an icon at the same nominal step must sit darker than the text beside it,
+or the distinction between a label and a mark disappears. Syntax is Anysphere (`#82D2CE` keyword, `#EFB080`
+function, `#E394DC` string, `#AAA0FA` property, `#F8C762` constant), not Nord.
 
-Warmth here is a deliberate, small number: `#12100b` has a red-minus-blue spread of 7, so it reads as a dark
-neutral with a faint warm cast rather than as brown. That spread is the thing to check when someone says the
-grey "went too warm" or "is too cold", and it is worth adjusting at the seed and the pin together, since a
-change to one alone leaves the ramp and the visible background disagreeing about the hue.
+**The seed only carries chroma and hue.** `generateNeutralScale` in `color.ts` takes lightness from a fixed
+ladder and reads `c` and `h` from `hexToOklch(seed)`, so a neutral seed at `#141414` produces a pure grey ramp
+with the same lightness distribution the warm one had. Changing the seed changes the cast; it cannot change
+the ramp's shape.
+
+**The page is pinned through `overrides`, not `v2Overrides`.** `resolve.ts:44` reads
+`overrides["background-base"]` directly, before the neutral ramp is consulted at all. A
+`v2Overrides["v2-grey-1000"]` pin looks equivalent and silently does nothing: the token stays at
+`neutral[0]`, which with this seed is `#0b0b0b` rather than `#141414`. Do not add a second pin for the same
+surface — one source, and it is `overrides`.
+
+**The light variant is still the original one**, deliberately. Porting the dark side was a separate decision
+from porting the light one, and Cursor ships a light theme we have not read.
 
 ### Composer layout
 
@@ -158,37 +167,44 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
 - The tray sizes itself from its text. The contenteditable carries `min-h-10` (40px) and the `ScrollView` is
   `min-h-0 max-h-[180px]`. Do not put a min-height back on the form — that is what pinned it to the old fixed
   height and hid the regression.
-- The tray's radius is `10px`, and it carries no `corner-shape`. It is a field, not a capsule: the 20px that
-  `min(50%, 20px)` gave was exactly half the one-line height, which turns both ends into semicircles, so the
-  shape stopped reading as a rounded rectangle at all. A percentage radius was the wrong tool anyway — it
-  resolves against the box, so it is 20px on the 40px tray and 90px on the 180px maximum, where the ends
-  swallow the start and end of every line. The same 10px stays a visible corner at that maximum, so one number
-  serves both heights. Only the radius is here: the button insets derive from the tray's 40px height, not from
-  this, so changing it moves nothing else.
-- `corner-shape` does **not** inherit, so anything drawn over a squircle has to be told separately: the effort
-  window's `::before` rim needs an explicit `corner-shape: inherit`, or it draws a circular hairline on top of
-  a squircle and the mismatch shows exactly at the corners, where the eye goes first. The tray declares no
-  `corner-shape` at all, so its own `::before` rim and `::after` glint declare none — `inherit` there resolves
-  to the initial value and says nothing. Confirm with `getComputedStyle(el, '::before').cornerShape`: it reads
-  `superellipse(1)` where there is no squircle and `superellipse(2)` where there is one.
-- The two 24px icon buttons keep the squircle the tray gave up: `[data-action="composer-attach"]` and
-  `[data-action="composer-submit"]` both get `corner-shape: squircle`, and their radius stays `rounded-full`,
-  which on a 24px box clamps to 12px — the same ceiling a squircle has there. The shape and the number are
-  independent here, and the buttons are the one place the composer still uses the curve, which is what keeps it
-  a deliberate language rather than an inconsistency with the tray. The fill is what carries the shape, and the
-  add button's open state inverts that fill on the same element, so it follows the curve in both states.
-- Both buttons are `size-6` (24px) inside the tray, at `start-2`/`end-2` and `bottom-2`. All three gaps are 8px:
-  `(40 − 24) / 2`, and the horizontal inset matches so neither button is tighter to its edge than to the top and
-  bottom. Send is the catalog's `enter`, stop is `stop`.
-- Send carries no fill; it brightens its glyph instead, and only when it can act. `canSubmit` drives the
-  button's `disabled`, so `editor.css` gives it `--v2-text-text-base` when there is something to send and
-  `--v2-text-text-muted` when there is not. The mark is the highlight. The white inverse fill it used to have
-  made it the one solid shape in a tray of outlines, and moving that fill behind a content check still claimed
-  an armed button over an empty field. The stop state hangs off `data-stopping` rather than a
-  `text-v2-state-fg-danger` utility, because the two rules above are unlayered and would outrank it.
-- The tray's leading text padding is `ps-11` (44px), which clears a 24px add button sitting 8px in: `8 + 24 + 12`.
-  The placeholder overlay carries the same padding on its own `absolute` layer and does **not** inherit the
-  contenteditable's — when the two disagree the hint slides under the add button. The trailing side is measured,
+- The tray's radius is `9999px` — a true pill, matching Cursor's `--cursor-radius-full` on its agent tray,
+  Claude Desktop's shape language, and Codex's near-capsule. It is `box-shadow: none`, declared rather than
+  omitted, because Cursor declares the same absence as an overridable token and the distinction is practical:
+  an absent shadow is something nobody decided, a declared one is something a later rule can replace.
+  Three products, three answers — `9999px`, `14px`, `28px` + `superellipse(1.5)` — so this is a taste call
+  against a measurement, not a measurement. The three-step history here (`min(50%, 20px)` → `10px` →
+  `9999px`) is a record of that: each was argued from the geometry and the last two disagreed.
+- The tray, its chips and its icon buttons declare **no `corner-shape` at all**. That matched the field
+  argument of the `10px` era and does not match the pill: a squircle inset inside a `9999px` tray is two shape
+  languages in one control. Cursor's token set carries no `corner-shape` anywhere, so there is nothing to port.
+  `corner-shape` still lives in one place — the effort knob, inside the popover, which is a menu surface and
+  not the tray.
+- The icon buttons take Cursor's control radius, not the tray's: `[data-action="composer-attach"]` is `6px`
+  and `[data-action="composer-submit"]` is `9999px`. A pill-shaped button inside a pill tray is a smaller
+  pill, and two radii where one language is enough reads as two components rather than one control group.
+  Send is round because it is the one filled control on the surface. The attach mark's open state inverts its
+  fill on the same element, so it follows in both states.
+- The tray's controls are centred with `inset-y-0` + `items-center`, not with a `bottom-*` inset. The actions
+  row is absolutely positioned, so with only a bottom edge it grows upward from a fixed 8px — and that number
+  is correct for exactly one tray height. The tray is 42px now that the editor carries a 22px line box, which
+  left send 10px from the top and 8px from the bottom; a grey button hides that and a white disc does not. This
+  is the same class of bug as a fixed `--composer-actions`: position derived from a tray measurement that the
+  next font-size change invalidates. Centring needs no number. Send is `size-7` and the catalog's `arrow-up`,
+  stop is `stop`.
+- Send is a white disc with a dark glyph, at `size-7`. This reverses an earlier decision and the reversal is
+  the point: it is Codex's treatment (`bg-primary-solid` at `#dfdfdf`, label inverted) and the only saturated
+  object on its tray, everything else being 5-12% alpha. It was `no fill, brightens the glyph` here, and
+  Cursor kept it that way, which is why the three references disagree on this element alone.
+  The disc is **unconditional**. Gating it on `canSubmit` was tried and reads wrong: the control appears as
+  you type, so the tray's only filled object is also the only thing that moves. `canSubmit` drives `disabled`,
+  and the empty field is communicated by `opacity: .45` on the disc instead — which is where the information
+  is. Hover drops the disc to 80%, the same move Codex makes. `stop` keeps the disc and changes the glyph
+  rather than taking a hue; a red mark on an empty tray is the loudest thing in it.
+- The tray's leading text padding is `ps-4` (16px). It was `ps-11` (44px) to clear a 24px add button sitting 8px
+  in, and that button moved to the bar — where it is a control among controls next to the agent it shares a row
+  with, rather than a control floating inside the field that bought its space with a whole column of padding on
+  every line of text. The placeholder overlay carries the same padding on its own `absolute` layer and does
+  **not** inherit the contenteditable's; when the two disagree the hint slides. The trailing side is measured,
   see below.
 - The trailing actions row is **measured**, not assumed. A `ResizeObserver` on `[data-slot="composer-actions"]`
   publishes its width as `--composer-actions` on the tray, and both the editor's trailing padding and the
@@ -211,18 +227,25 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   real border takes a pixel out of the content box and breaks the 40px the insets derive from; a box-shadow would
   replace the mask ring from `[data-dock-border-underlay]` rather than stack on it, because the later declaration
   wins outright.
-- The focus glint is that same rim's `::after`: a conic gradient masked to it, so the highlight travels the whole
-  perimeter and bends around the corners, with `@property` on the angle so it interpolates and the 3s loop has no
-  stall. It appears only under `:focus-within`, so no component observes focus. The `composerGlint` appearance
-  setting writes `data-composer-glint="off"` on the root and the rule uses `content: none`, so switching it off
-  leaves a tray that never animates rather than one too faint to notice.
+- **The focus glint is gone.** It was a conic gradient masked to the rim, animating `--composer-glint-angle`
+  0→360° over 3s on `:focus-within`, peaking at 40% white. It is replaced by the rim stepping from 8% white to
+  12% over 150ms, and that replacement is not a taste call — it is what all three references do: Cursor moves
+  its stroke 8%→12% over the same 150ms, Claude Desktop moves an inset ring 10%→20% over 200ms, and Codex
+  spends its whole focus budget on a transparent outline, i.e. nothing. Three independent implementations spend
+  it on a single alpha step. An animated three-second highlight had no counterpart in any of them and on an
+  empty screen it was the loudest thing there. The `composerGlint` appearance setting was removed with it,
+  end to end — schema, default, controller, persistence, i18n and its test assertion — because a switch that
+  controls nothing is a defect, not a harmless leftover.
 - Send and stop keep their colour in mutually exclusive `classList` keys, not a base colour the stop state
   overrules: two `bg-*` utilities in one cascade resolve by stylesheet order, not by intent. The tray has no
   variant of its own — `variant="submit"` would repaint it with `--v2-elevation-button-contrast`.
-- The model rides inside the **text tray**, in `composer-actions` before the submit button, not in the bar. It
-  names what the prompt is about to run on, so it reads as the sentence's own furniture; the bar below is the
-  instrument cluster — readouts, not inputs. Keep it at `size="small"` (24px) so it matches the submit
-  button it sits beside, and remember the text's trailing padding is measured, see below.
+- The model rides inside the **text tray**, in `composer-actions` between the delivery toggle and the submit
+  button — Cursor's position, trailing side of the tray with send at the far edge. It names what the prompt is
+  about to run on, so it reads as the sentence's own furniture; the bar below is the instrument cluster.
+  This documentation claimed the model was in the tray for several rounds while the code had it in the bar
+  next to the thinking level: the two are not the same control, one names the thing and the other changes how
+  hard it runs. Keep it at `size="small"` (24px) so it matches the button it sits beside, and remember the
+  text's trailing padding is measured, see below.
 - The bar is two trays, not one row: `composer-controls-tray` holds the thinking-power chip,
   `composer-bar-slot-tray` holds whatever `barSlot` carries. Both carry **no surface at all** — no fill, no
   rim, no shadow. They were the text tray's twins with a hairline until the fill was dropped, and the mark
@@ -233,20 +256,18 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   sits on the group around both trays, not on the row, for the reason below.
 - `justify-end` on the controls row would drag the agent along, so the trailing group uses `ms-auto`. `barSlot`
   is a prop, not state: the generic composer renders whatever the caller passes and knows nothing about sessions.
-- Chips take the tray's contour from `editor.css`, not from their own variant: radius **and** shape. Every
-  button variant carries a small circular radius, which reads as a square block pasted into the tray the moment
-  it takes the hover fill, and a circular hover fill against the squircle the chips themselves carry is the
-  pairing that looks like an accident. The rule is unlayered for the same reason the glint is, which also
-  means it beats the variant's own radius — `button.css` sits in `@layer components` — so **no chip needs
-  `!rounded-full`**. The model chip is the one that looks like it does: it is inside the text tray rather than
-  a bar tray, so it needs its own hook (`[data-component="composer"] [data-action="composer-model"]`) to reach
-  the same rule. Three more controls take the hover fill and so need the contour named, because no slot hook
-  reaches them: `[data-action="composer-exit-shell"]` and `[data-action="composer-alternate-delivery"]`, the
-  tray's two text buttons, and `[data-action="prompt-project"]`, the new-session project picker. That last one
-  was 28px at a 4px radius, so its hover fill read as a plain rounded rectangle sitting beside a squircle chip —
-  one control out of step is what makes a set look undesigned rather than composed. Set radius and shape in the
-  same rule: at these sizes the radius is a consequence of the curve, and splitting the pair across two files
-  is how they drift apart.
+- Chips take the tray's contour from `editor.css`, not from their own variant: radius only. Every button
+  variant carries a small circular radius, which reads as a square block pasted into a round tray the moment it
+  takes the hover fill. The rule is unlayered, which also means it beats the variant's own radius —
+  `button.css` sits in `@layer components` — so **no chip needs `!rounded-full`**. The model chip is the one that
+  looks like it does: it is inside the text tray rather than a bar tray, so it needs its own hook
+  (`[data-slot="composer-actions"] [data-action="composer-model"]`). Three more controls take the hover fill and
+  so need the contour named, because no slot hook reaches them:
+  `[data-action="composer-exit-shell"]` and `[data-action="composer-alternate-delivery"]`, the tray's two text
+  buttons, and `[data-action="prompt-project"]`, the new-session project picker.
+  **The model chip takes no fill on hover at all** — only the label lifts from muted to base. Cursor's model
+  trigger does exactly this (`background-color: transparent`, `transition-duration: 0s`), and eight chips each
+  filling put eight separate blocks into a row whose surface is 6% white.
 - `editor.css` is **unlayered**, and that is the only reason colour belongs there rather than on the trigger:
   unlayered rules beat every `@layer`, Tailwind's `utilities` included. The direction is worth stating because
   it is easy to get backwards — a colour utility **does** beat `icon-button.css`'s own `color`, since that file
@@ -345,8 +366,11 @@ and the insets set the padding and the scroll-thumb offset. Change one and recom
   a plain table sends all seven dots down the same lanes every time the window opens, and a memo would
   reshuffle them under the pointer mid-drag. Keep the jitter small — the table is the rhythm, the jitter only
   breaks it up.
-- The placeholder overlay is `text-v2-text-text-faint/55`. `faint` is already the lightest text role the theme
-  exposes, so extra fade is an opacity modifier, not a second token.
+- The placeholder overlay is `text-v2-text-text-base/36`, matching Cursor's
+  `color-mix(in srgb, #F0F0F0 36%, transparent)`. It was `text-v2-text-text-faint/55`, a 55% alpha modifier on
+  the faintest token, which resolved around 26% — dimmer than either reference (Cursor 36%, Claude Desktop's
+  `#898781` about 66%). The editor is `text-[14px]` with `leading-[22px]`, also Cursor's, so the tray is 42px
+  rather than 40px.
 - The model chip carries no provider mark. The selector groups by provider and draws one per group, which is where
   the mark belongs; on the chip it was noise beside a name that already reads.
 - The add button's glyph is drawn in `editor.tsx`, not taken from the icon catalog. Catalog bodies carry no

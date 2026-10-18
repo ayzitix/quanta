@@ -1,6 +1,5 @@
 import { Component } from "solid-js"
 import { Select } from "@opencode/ui/select"
-import { Switch } from "@opencode/ui/switch"
 import { TextInput } from "@opencode/ui/text-input"
 import { useLanguage } from "@/runtime/i18n/language"
 import { ExternalLink } from "@/runtime/platform/external-link"
@@ -129,18 +128,6 @@ export const SettingsAppearance: Component = () => {
             <FontSetting kind="ui" fonts={appearance.fonts} />
             <FontSetting kind="code" fonts={appearance.fonts} />
             <FontSetting kind="terminal" fonts={appearance.fonts} />
-
-            <SettingsRow
-              title={language.t("settings.appearance.row.composerGlint.title")}
-              description={language.t("settings.appearance.row.composerGlint.description")}
-            >
-              <div data-action="settings-composer-glint">
-                <Switch
-                  checked={appearance.composerGlint()}
-                  onChange={(checked) => appearance.setComposerGlint(checked)}
-                />
-              </div>
-            </SettingsRow>
           </SettingsList>
         </div>
       </div>
