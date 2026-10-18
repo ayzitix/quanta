@@ -436,6 +436,18 @@ outside dismiss, and the rewrite runs through the machinery that already existed
   not also need rewording.
 - **Enter-to-edit requires a collapsed selection.** Otherwise dragging across the message to copy a phrase opens the
   editor instead. Collapsing on a click-only press is what tells the two apart.
+- **The actions are a right-click window, not a row under the bubble.** A full-width bubble with a control strip under it
+  gives every message two things to look at and only one of them is the message. What stays below is the time, because
+  that is a reading and not a control; the agent and model names went with the buttons, and the model is on the chip while
+  a message is open for editing. The known cost: a right-click window has no keyboard route, so revert and copy are
+  pointer-only until something opens it on a key.
+- **Kobalte binds `contextmenu` to its `Trigger`, not to its root.** A context menu wrapped around markup that already
+  exists needs an explicit `Menu.Context.Trigger`, or right-click does nothing at all and the only symptom is a menu that
+  never opens. Both wrappers here carry `contents`: the component's root is a flex column, and a real div between it and
+  its children becomes the flex item instead. `Menu.Context`'s props type does not mention `class` even though Kobalte
+  forwards it, so the interface in `menu.tsx` now says so.
+- **Revert and copy are separated.** They are not two operations — one rewinds the session, the other only reads text —
+  and a reader should not have to work out which is which from the order they sit in.
 - **The resend composes `revert.to` with the composer's own submit** rather than adding an operation. `revert.to`
   restores the original prompt into the tray, which is right when the tray is the editing surface and wrong here, so the
   tray's draft is captured before and put back after — `restore` is what keeps the message's attachments on the re-sent
@@ -453,6 +465,32 @@ and the rule wins without `!important` and without moving one file out of the la
 in. `editor.css` wins for the opposite reason: it is unlayered, which is why the composer's own chrome can beat a Tailwind
 colour utility. Both directions are easy to get backwards, and the failing case looks like "my rule is in the file and does
 nothing".
+
+### The native right-click menu
+
+Electron offers Select All and Inspect Element on right-click. `suppressNativeContextMenu` in
+`packages/desktop/src/renderer/context-menu.ts` cancels it everywhere except inside a field, where cut, copy and paste
+are real commands no menu of ours stands in for.
+
+**It lives in the desktop shell, not in `packages/app/src/entry.tsx`.** The app's entry is the web and PWA build; the
+Electron renderer mounts through `packages/desktop/src/renderer/index.tsx`. Putting it in the app entry typechecks,
+prettifies and does nothing, and the only symptom is a menu that is still there.
+
+**It listens on the bubble phase and checks `defaultPrevented` before cancelling. Both halves are load bearing.**
+Kobalte's context-menu trigger opens only when `event.defaultPrevented` is false — verified in the installed package,
+not assumed:
+
+```js
+const onContextMenu = (e) => {
+  callHandler(e, local.onContextMenu)
+  if (local.disabled) return
+  if (e.defaultPrevented) return
+```
+
+So a capture-phase listener that cancels eagerly does not merely fail to suppress the native menu. It runs first, sets
+the flag, and **every context menu in the app silently stops opening**. That is what happened here, and the symptom
+points at the wrong place entirely: the menus look untouched, only right-click does nothing. Letting the trigger cancel
+first and then standing down is what makes "cancel it unless something else already did" correct.
 
 ### Extension content in the composer
 
