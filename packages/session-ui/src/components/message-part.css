@@ -175,20 +175,15 @@
     word-break: break-word;
     overflow: hidden;
     unicode-bidi: plaintext;
-    /* The composer tray's surface, rim and curve, so the two boxes on screen are one material rather than two
-       that happen to share a page. `layer-01` is the tray's own fill and `border-muted` is its 8% rim, which is
-       the number Cursor measures on that rim — so the hairline here is the same one the tray draws, not a
-       second value picked for messages. `corner-shape` is declared in CSS rather than as a utility because the
-       `corner-shape-squircle` class is not in this Tailwind build: it compiles and silently does nothing. */
-    background: var(--v2-background-bg-layer-01);
-    border: 1px solid var(--v2-border-border-muted);
+    /* Cursor's bubble fill is `--cursor-bg-input`, which is an alias for `--cursor-editor` -- byte-identical
+       to the wrapper behind it. There is no fill contrast at all; the box is legible purely from its 1px rim,
+       and the tonal difference visible in a screenshot is that rim, not a fill. So this declares the page
+       colour rather than a layer above it, and the 12% rim is `--cursor-stroke-secondary` rather than the
+       8% the composer tray uses -- two different surfaces, two different measured values. */
+    background: var(--v2-background-bg-base);
+    border: 1px solid var(--v2-alpha-light-12);
     padding: 8px 12px;
-    /* 16px is `--cursor-radius-3xl`, the fourth step of Cursor's own scale, and it is as far round as this box
-       should go: a user message is unbounded in height, so the tray's `9999px` on a ten-line prompt turns the
-       ends into semicircles and reads as a lozenge rather than a bubble. The curve is what makes 16px look
-       like a tray rather than a rectangle — the number alone at this size would still read as a hard corner. */
-    border-radius: 16px;
-    corner-shape: squircle;
+    border-radius: 8px;
     transition:
       background-color 200ms ease,
       color 200ms ease;
