@@ -64,6 +64,25 @@ export const timelinePresets = [
     },
   },
   {
+    // The rung between `detailed` and `compact`: every category on its own row, each collapsed until opened.
+    // `compact` groups, which is too much on one line and too little to read; `everything` shows the contents
+    // already open, which buries the answer in the transcript it is an aside to. This is the reading position:
+    // names in the flow, details on demand.
+    //
+    // Appended rather than inserted: twenty-six call sites address these by index, and shifting them would
+    // silently repoint fifteen tests at a different preset. The slider's order is stated where the slider is.
+    id: "separate",
+    value: {
+      shell: { placement: "separate", details: "collapsed" },
+      edit: { placement: "separate", details: "collapsed" },
+      thinking: { placement: "separate", details: "collapsed" },
+      subagents: { placement: "separate" },
+      notices: { placement: "separate" },
+      // No `details`: this category carries a placement only, so a row here is either there or not.
+      tools: { placement: "separate" },
+    },
+  },
+  {
     id: "text-only",
     value: {
       shell: { placement: "hidden", details: "collapsed" },
@@ -75,6 +94,10 @@ export const timelinePresets = [
     },
   },
 ] as const satisfies readonly { id: string; value: TimelineDetail }[]
+
+/** The default density for a new install: names in the flow, details on demand. Referenced by id rather
+    than by index so that reordering the array cannot repoint it. */
+export const defaultTimelineDetail = timelinePresets.find((preset) => preset.id === "separate")!.value
 
 export function timelinePreset(value: TimelineDetail) {
   return timelinePresets.find((preset) =>

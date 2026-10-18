@@ -787,6 +787,7 @@ export const dict = {
   "settings.timeline.preset.everything": "Everything",
   "settings.timeline.preset.detailed": "Detailed",
   "settings.timeline.preset.compact": "Compact",
+  "settings.timeline.preset.separate": "Expandable",
   "settings.timeline.preset.quiet": "Quiet",
   "settings.timeline.preset.text-only": "Messages only",
   "settings.timeline.description.everything": "Show all activity separately. Expand shell output, edits, and thinking.",

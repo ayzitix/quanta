@@ -2,7 +2,11 @@ import { produce, reconcile, unwrap } from "solid-js/store"
 import { createEffect, createMemo } from "solid-js"
 import { Effect, Option, Predicate, Schema, SchemaGetter } from "effect"
 import { createSimpleContext } from "@opencode/ui/context"
-import { timelinePresets, type TimelineCategory, type TimelineDetail } from "@opencode/session-ui/timeline/detail"
+import {
+  defaultTimelineDetail,
+  type TimelineCategory,
+  type TimelineDetail,
+} from "@opencode/session-ui/timeline/detail"
 import { persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import { ScopedKey, type ServerScope } from "@/runtime/server/scope"
@@ -279,7 +283,7 @@ export const settingsPersistence = Persistence.migrate(
 export const defaultSettings: Settings = {
   general: {
     showFileTree: false,
-    timelineDetail: { ...timelinePresets[2].value },
+    timelineDetail: { ...defaultTimelineDetail },
     showTurnDiffs: false,
     mobileTitlebarPosition: "top",
     terminalPlacement: "side",

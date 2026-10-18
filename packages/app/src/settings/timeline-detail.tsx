@@ -16,7 +16,11 @@ import {
 import { useLanguage } from "@/runtime/i18n/language"
 import "./timeline-detail.css"
 
-const presets = timelinePresets.toReversed()
+// Least detail first. Stated rather than derived from the array, because the array now ends with the default
+// and twenty-six call sites address it by index; reversing it would put the default on the "least" end.
+const presets = (["text-only", "quiet", "compact", "separate", "detailed", "everything"] as const).map(
+  (id) => timelinePresets.find((preset) => preset.id === id)!,
+)
 
 export function TimelineDetailControl(props: { value: TimelineDetail; onChange: (value: TimelineDetail) => void }) {
   const language = useLanguage()

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
-import { timelinePresets } from "@opencode/session-ui/timeline/detail"
+import { defaultTimelineDetail, timelinePresets } from "@opencode/session-ui/timeline/detail"
 import { Persistence } from "@/runtime/persistence/schema"
 import {
   settingsSchema,
@@ -27,8 +27,11 @@ describe("settings timeline detail migration", () => {
     })
 
     expect(settings.general.timelineDetail).toEqual({
-      ...timelinePresets[2].value,
+      ...defaultTimelineDetail,
       shell: { placement: "separate", details: "expanded" },
+      // Stated rather than inherited: the legacy switches map all three categories themselves, and reading
+      // `edit` off the default hides that this one lands on grouped whatever the default says.
+      edit: { placement: "grouped", details: "collapsed" },
       thinking: { placement: "separate", details: "expanded" },
     })
     expect(settings.appearance.fontSize).toBe(16)
@@ -91,7 +94,7 @@ describe("settings schema", () => {
     expect(decode({})).toEqual({
       general: {
         showFileTree: false,
-        timelineDetail: timelinePresets[2].value,
+        timelineDetail: defaultTimelineDetail,
         showTurnDiffs: false,
         mobileTitlebarPosition: "top",
         terminalPlacement: "side",
@@ -139,7 +142,7 @@ describe("settings schema", () => {
     expect(settings.general).toMatchObject({
       showTerminal: true,
       autoSave: false,
-      timelineDetail: timelinePresets[2].value,
+      timelineDetail: defaultTimelineDetail,
       followUpBehavior: "steer",
     })
     expect(settings.appearance).toEqual({
