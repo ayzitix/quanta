@@ -63,18 +63,6 @@
     max-width: 100%;
   }
 
-  /* `h-9`, the height the `Working` row under the timeline is given. Two rows that hand over to each other
-     have to be the same size, or the transcript moves on the exchange: `Working` is the last thing under the
-     timeline while the thought row is the last row of the turn, and they replace each other in the same
-     place. Measured: 36px against `Working`'s 36px.
-
-     Not scoped to streaming, which was the first attempt and was wrong: it left the settled label at 32px and
-     shrank the row 4px at the moment the turn ended. The row is 36px in both states or the swap is visible
-     either way. */
-  [data-component="reasoning-part"] .reasoning-collapsible-trigger {
-    min-height: 36px;
-  }
-
   [data-component="reasoning-part"] .reasoning-collapsible-trigger {
     display: inline-flex;
     align-items: center;
