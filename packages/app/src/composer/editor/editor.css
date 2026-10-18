@@ -49,9 +49,10 @@
   border-radius: 26px;
   corner-shape: squircle;
   box-shadow: none;
-  /* Tucked under the instruments, which are drawn above it. The instruments are the ones on top now, so
-     the stacking level moves with the arrangement rather than staying with the element. */
-  margin-top: -6px;
+  /* Above the instruments' tray, which is drawn behind it. Nothing else in the composer stacks against
+     this, so a single level is enough and it is declared here rather than as a negative one on the bar:
+     the bar is the thing being hidden, and it should not have to know who covers it. */
+  z-index: 10;
 }
 
 /* The instruments carry a tray of their own, full width -- the same length as the text tray above it, so
@@ -68,10 +69,6 @@
    Inset by the tray's own radius. Full width was tried and it read as one silhouette, which is the thing
    this arrangement is against; the inset is what makes it a tray hanging off another one. */
 [data-slot="composer-bar"] {
-  /* On top now, so this is the tray that is exposed at its own corners and the text tray below is the one
-     tucked under. z-index stays here, at 10, because this is what has to paint in front.
-  z-index: 10;
-
   /* Pronounced means a longer curve, not a straighter corner. `squircle` is exponent 2 and it is the shape
      itself; raising the exponent to 3 was tried here and made the corners sharper, which is the opposite of
      what a squircle is. What makes it read at this size is the radius: 10px on a shallow 34px shape is a
@@ -85,7 +82,7 @@
      It was reverted, because a basket that grows to be rounder is not a trade worth making. Past 17px at
      this height the corner stops being a squircle and becomes a plain ellipse, which is rounder still and
      is not what this is. */
-  border-radius: 16px 16px 0 0;
+  border-radius: 0 0 16px 16px;
   corner-shape: squircle;
   border: 1px solid var(--v2-border-border-muted);
 }

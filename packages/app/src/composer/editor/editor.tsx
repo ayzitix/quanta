@@ -386,7 +386,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
         </div>
       </form>
 
-      <div data-slot="composer-bar" class="order-first mx-2 flex h-10 items-center gap-2 px-2 pb-1.5">
+      <div data-slot="composer-bar" class="mx-2 -mt-1.5 flex h-10 items-center gap-2 px-2 pt-1.5">
         {/* The add control moved out of the tray and to the leading end of this bar, where the agent chip
             already sits. It was a button floating inside the text field, and it bought its space with a
             44px leading pad on every line of text — a whole column of padding whose only job was to clear a
