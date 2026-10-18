@@ -39,6 +39,19 @@
 [data-component="composer"] {
   border-radius: 10px;
   box-shadow: none;
+  /* Above the instruments' tray, which is drawn behind it. Nothing else in the composer stacks against
+     this, so a single level is enough and it is declared here rather than as a negative one on the bar:
+     the bar is the thing being hidden, and it should not have to know who covers it. */
+  z-index: 10;
+}
+
+/* The instruments carry a surface of their own, inset by the tray's own radius and rounded only where it
+   is exposed. Its top edge is square because it sits behind the tray, pulled up 8px by `-mt-2`, and those
+   8px are never seen -- rounding them would draw a curve under the text field's bottom edge, which is
+   exactly the seam this arrangement exists to remove. */
+[data-slot="composer-bar"] {
+  border-radius: 0 0 10px 10px;
+  background-color: var(--v2-alpha-light-8);
 }
 
 /* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only

@@ -174,7 +174,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
       : undefined
 
   return (
-    <div class={`relative size-full flex flex-col gap-0.5 ${props.class ?? ""}`}>
+    <div class={`relative size-full flex flex-col gap-0 ${props.class ?? ""}`}>
       <input
         ref={props.controller.setFileInput}
         type="file"
@@ -386,7 +386,7 @@ export function ComposerEditor(props: ComposerEditorProps) {
         </div>
       </form>
 
-      <div data-slot="composer-bar" class="flex h-9 items-center gap-1 px-1">
+      <div data-slot="composer-bar" class="mx-2.5 -mt-2 flex h-11 items-center gap-2 px-2 pt-2">
         {/* The add control moved out of the tray and to the leading end of this bar, where the agent chip
             already sits. It was a button floating inside the text field, and it bought its space with a
             44px leading pad on every line of text — a whole column of padding whose only job was to clear a
