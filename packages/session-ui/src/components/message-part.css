@@ -183,7 +183,12 @@
     background: var(--v2-background-bg-base);
     border: 1px solid var(--v2-alpha-light-12);
     padding: 8px 12px;
-    border-radius: 8px;
+    /* Rounder than the 8px Cursor measures, and a squircle rather than the ellipse that number implies. At this
+       height 8px is a rounding and 12px is a shape, and a squircle at 12 is the one that reads as deliberate
+       rather than as a default. The curve is declared here, at rest, because the editing state inherits it --
+       declaring it only there made the box change its corner curve the moment it opened. */
+    border-radius: 12px;
+    corner-shape: squircle;
     transition:
       background-color 200ms ease,
       color 200ms ease;
@@ -1303,29 +1308,17 @@
   }
 }
 
-/* Editing turns the bubble into a field. The two states are different surfaces and Cursor has only one of
-   them: its bubble is a page-coloured box with a 12% rim at 8px, and there is no editable variant to copy. So
-   the editor's geometry is declared here rather than shared, because `editor.css` is scoped to
-   `[data-component="composer"]` and moving the message into that scope would make it a composer. */
+/* Editing turns the bubble into a field, and the field is the same box. Nothing about its surface moves: no
+   fill, no rim, no radius, no corner curve. Each of those was tried as a "this is writable" signal -- a raised
+   fill, a recessed rim, a larger radius for the taller box -- and all three read as two components rather than
+   as one box becoming editable. What is left is the caret, the controls, and the box growing, which is enough.
+   The padding moves onto the two parts below rather than staying here: the text needs the message's own 12px
+   inline inset or the line jumps sideways the moment the box opens, and the controls want a tighter 6px from
+   the corner than a 12px inline inset would give them. One value on the bubble cannot serve both -- whichever
+   it picks, one of them moves. */
 [data-slot="user-message-text"][data-editing] {
   cursor: text;
-  background: var(--v2-background-bg-layer-01);
-  border-color: var(--v2-border-border-muted);
-  /* The bubble drops its padding entirely and each part below takes its own: the text needs the message's own
-     12px inline inset or the line jumps sideways the moment the box opens, and the controls want a tighter
-     6px from the corner than a 12px inline inset would give them. Declaring one uniform value on the bubble
-     cannot serve both -- whichever it picks, one of them moves. */
   padding: 0;
-  /* A squircle, matching the message's own `corner-shape` at rest, so the box does not change its shape the
-     moment it becomes editable -- only its fill and its rim do. The tray's pill was the alternative and it
-     read as a button among messages. The curve and the number travel together: at these sizes the radius is
-     a consequence of the curve, and `9999px` under a squircle clamps back to an ellipse. */
-  border-radius: 16px;
-  corner-shape: squircle;
-  box-shadow: none;
-  transition:
-    background-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1),
-    border-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
 }
 
 [data-slot="user-message-edit"] {
