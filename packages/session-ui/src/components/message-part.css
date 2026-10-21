@@ -19,7 +19,7 @@
   color: var(--v2-text-text-base);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   align-self: stretch;
   width: 100%;
   max-width: 100%;
@@ -28,11 +28,10 @@
   [data-slot="user-message-attachments"] {
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 8px;
     width: fit-content;
     max-width: min(82%, 64ch);
-    margin-inline-start: auto;
   }
 
   [data-slot="user-message-attachment"] {
@@ -127,12 +126,15 @@
   }
 
   [data-slot="user-message-body"] {
-    width: fit-content;
-    max-width: min(82%, 64ch);
-    margin-inline-start: auto;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
+    /* `stretch`, not `flex-start`. This is a column flex container, so the cross axis is horizontal and
+       `align-items` is what decides the bubble's width — a flex item with no explicit width shrinks to its
+       content under `flex-start`, and `display: block` on the bubble does nothing about it because it is not
+       a block in that context. `flex-end` gave the old right-aligned chip; `flex-start` gave the same chip on
+       the left. Only `stretch` makes `width: 100%` on the body mean anything. */
+    align-items: stretch;
   }
 
   /* Like the iOS app's Voice badge: on the bubble's top leading corner, ringed in the page background. */
@@ -168,15 +170,30 @@
   }
 
   [data-slot="user-message-text"] {
-    display: inline-block;
+    display: block;
     white-space: pre-wrap;
     word-break: break-word;
     overflow: hidden;
     unicode-bidi: plaintext;
-    background: var(--v2-background-bg-layer-02);
-    border: none;
+    /* Cursor's bubble fill is `--cursor-bg-input`, which is an alias for `--cursor-editor` -- byte-identical
+       to the wrapper behind it. There is no fill contrast at all; the box is legible purely from its 1px rim,
+       and the tonal difference visible in a screenshot is that rim, not a fill. So this declares the page
+       colour rather than a layer above it, and the 12% rim is `--cursor-stroke-secondary` rather than the
+       8% the composer tray uses -- two different surfaces, two different measured values. */
+    /* A 6% white lift rather than the page colour. It read as flat against a page at the same value -- the
+       box was legible only from its rim, which makes the rim the thing carrying the whole surface -- and 6%
+       is below the composer tray's 8%, so the bubble is lifted without becoming louder than the tray. */
+    background-color: var(--v2-alpha-light-6);
+    border: 1px solid var(--v2-alpha-light-12);
     padding: 8px 12px;
-    border-radius: 10px;
+    /* A squircle, not the ellipse that a bare radius implies, and rounder than the 8px the radius alone would
+       suggest. `corner-shape` changes the curve's continuity, not its size, so a radius that reads as a plain
+       rounded rectangle on an ellipse curve reads as a soft box on a squircle one. 14px on a ~40px line is
+       about half the height -- far enough to be a shape, short of the 20px where it becomes a pill. The curve
+       is declared here, at rest, because the editing state inherits it: declaring it only there changed the
+       corner shape the moment the box opened. */
+    border-radius: 14px;
+    corner-shape: squircle;
     transition:
       background-color 200ms ease,
       color 200ms ease;
@@ -1233,10 +1250,6 @@
 :root body [data-component="user-message"] {
   font-weight: 440;
 
-  [data-slot="user-message-text"] {
-    background: var(--v2-background-bg-layer-01);
-  }
-
   [data-slot="user-message-comments"] {
     display: flex;
     flex-direction: column;
@@ -1275,42 +1288,12 @@
   }
 }
 
-:root[data-color-scheme="light"] body [data-component="user-message"] [data-slot="user-message-text"] {
-  background: var(--v2-background-bg-layer-02);
-}
-
-:root
-  body
-  [data-workspace-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  --user-message-mention-prefix-color: var(--v2-blue-300);
-
-  background: var(--v2-background-bg-accent);
-  color: var(--v2-text-text-contrast);
-}
-
-:root body [data-local-session] [data-component="user-message"] [data-slot="user-message-text"] {
-  border-radius: 8px;
-}
-
-:root[data-color-scheme="light"]
-  body
-  [data-local-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  background: var(--v2-blue-100);
-  color: var(--v2-blue-700);
-}
-
-:root[data-color-scheme="dark"]
-  body
-  [data-local-session]
-  [data-component="user-message"]:not([data-pending])
-  [data-slot="user-message-text"] {
-  background: var(--v2-blue-1200);
-  color: var(--v2-blue-300);
-}
+/* The bubble used to be recoloured by session kind: `bg-accent` for a workspace session, `blue-1200` for a local
+   one, with a 8px radius on the local branch. That was the only signal telling a local session apart from a
+   remote one at a glance, and it is gone: the bubble is the composer tray's own material now, which is what
+   Cursor does -- it has one bubble for every session kind and no colour to read. If the distinction is worth
+   having back it has to be carried by something other than fill, because the fill is what the two boxes on
+   screen now share. */
 
 /* Only delivery animates. A steer can render once before its admission marks it pending, and must not fade from the
    delivered color. */
@@ -1324,4 +1307,96 @@
   [data-slot="user-message-mention-prefix"] {
     transition: none;
   }
+}
+
+/* Editing turns the bubble into a field, and the field is the same box. Nothing about its surface moves: no
+   fill, no rim, no radius, no corner curve. Each of those was tried as a "this is writable" signal -- a raised
+   fill, a recessed rim, a larger radius for the taller box -- and all three read as two components rather than
+   as one box becoming editable. What is left is the caret, the controls, and the box growing, which is enough.
+   The padding moves onto the two parts below rather than staying here: the text needs the message's own 12px
+   inline inset or the line jumps sideways the moment the box opens, and the controls want a tighter 6px from
+   the corner than a 12px inline inset would give them. One value on the bubble cannot serve both -- whichever
+   it picks, one of them moves. */
+[data-slot="user-message-text"][data-editing] {
+  cursor: text;
+  padding: 0;
+}
+
+[data-slot="user-message-edit"] {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  /* The message's own 8/12 padding, moved onto the field, so the caret sits exactly where the text was.
+     The controls sit in flow below the field rather than floating over it, so nothing here reserves room
+     for them -- that reservation is what pushed the last line of a wrapped message under the send button. */
+  padding: 8px 12px 0;
+  /* Two lines as a floor, so the field is a field rather than a grown one-liner. The controls below take
+     another 28px, and at one line the tray was a strip with two buttons under a sentence. `field-sizing`
+     still grows it from here. */
+  min-height: 2lh;
+  max-height: 320px;
+  field-sizing: content;
+}
+
+/* The editing field is a `<textarea>`, so a long message brings the browser's scrollbar with it: a grey
+   trough with arrows at both ends, which is the one piece of the message that is visibly not this product.
+   `scrollbar-width` covers Firefox and the `::-webkit-scrollbar` pair covers Chromium and WebKit, which is
+   the same two-step the turn's own scroll containers use.
+
+   The scrollbar is hidden rather than restyled: a `<textarea>` cannot take the `ScrollView` component that
+   draws the app's thumb elsewhere, and a styled native bar still reads as the platform's. Hiding it leaves
+   the field scrolling with no visible chrome, which is what the rest of the message does. */
+[data-slot="user-message-edit"] {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+[data-slot="user-message-editor-actions"] {
+  margin-block-start: 0;
+  padding: 0 6px 6px;
+}
+
+/* The model chip takes the row's contour, the way a chip in the composer's tray takes its own. `editor.css`
+   declares that one scoped to `[data-slot="composer-actions"]`, which this is not, so it is restated here
+   rather than moved into a shared selector -- the two rows are not the same control and the tray's rules carry
+   its tray's insets with them. `button-v2` is in the selector for the same cascade reason as the rules below,
+   and the chip's `small` size would otherwise pin the 4px radius. */
+[data-slot="user-message-editor-actions"] [data-component="button-v2"][data-action="composer-model"] {
+  border-radius: 9999px;
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="button-v2"][data-action="composer-model"]:is(:hover, [data-state="hover"]) {
+  background-color: var(--v2-alpha-light-8);
+}
+
+/* The two controls under the field, carrying the composer's chrome -- the white send disc, the 8% grey its
+   neighbour takes, and 9999px on both, which is the tray's send radius rather than its 6px icon-button
+   radius. Values are copied from `editor.css` rather than keyed off the composer's `data-action`: those
+   hooks are global and unlayered, so reusing them put the tray's 6px radius here and made this button the
+   first document match for the lookup the attach button has to make.
+
+   `icon-button-v2` is in the selector for the cascade, not for the button. This file is imported into
+   `layer(components)` and `icon-button.css` is injected from its own module into the same layer, so an
+   equal-specificity rule loses to whichever lands later in the document -- and the component's does. Three
+   attribute selectors settle it without an `!important` and without moving one file out of the layer the rest
+   of the message styles live in. The composer's own rules are unlayered and win for the opposite reason. */
+[data-slot="user-message-editor-actions"] [data-component="icon-button-v2"][data-action="message-edit-submit"] {
+  background-color: var(--v2-text-text-contrast);
+  color: var(--v2-background-bg-base);
+  border-radius: 9999px;
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="icon-button-v2"][data-action="message-edit-submit"]:is(:hover, [data-state="hover"]) {
+  background-color: color-mix(in srgb, var(--v2-text-text-contrast) 80%, transparent);
+}
+
+[data-slot="user-message-editor-actions"]
+  [data-component="icon-button-v2"][data-action="message-edit-submit"]:disabled {
+  opacity: 0.45;
 }

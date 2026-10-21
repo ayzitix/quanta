@@ -1,8 +1,7 @@
-import { produce, reconcile, unwrap } from "solid-js/store"
+import { produce, reconcile } from "solid-js/store"
 import { createEffect, createMemo } from "solid-js"
-import { Effect, Option, Predicate, Schema, SchemaGetter } from "effect"
+import { Effect, Option, Schema } from "effect"
 import { createSimpleContext } from "@opencode/ui/context"
-import { timelinePresets, type TimelineCategory, type TimelineDetail } from "@opencode/session-ui/timeline/detail"
 import { persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import { ScopedKey, type ServerScope } from "@/runtime/server/scope"
@@ -90,14 +89,6 @@ export function terminalFontFamily(font: string | undefined) {
   return stack(font, terminalBase)
 }
 
-const placementSchema = Schema.Literals(["separate", "grouped", "hidden"])
-
-const detailsSchema = Schema.Literals(["collapsed", "expanded"])
-
-const activitySchema = Persistence.struct({ placement: placementSchema, details: detailsSchema })
-
-const placementOnlySchema = Persistence.struct({ placement: placementSchema })
-
 const generalSchema = Persistence.struct({
   // Retired preferences without readers; kept so stored values still decode and round-trip.
   autoSave: Persistence.optional(Schema.Boolean),
@@ -107,15 +98,6 @@ const generalSchema = Persistence.struct({
   showNavigation: Persistence.optional(Schema.Boolean),
   showSearch: Persistence.optional(Schema.Boolean),
   showTerminal: Persistence.optional(Schema.Boolean),
-  timelineDetail: Persistence.struct({
-    shell: activitySchema,
-    edit: activitySchema,
-    thinking: activitySchema,
-    subagents: placementOnlySchema,
-    notices: placementOnlySchema,
-    tools: placementOnlySchema,
-  }),
-  showCustomAgents: Schema.Boolean,
   showTurnDiffs: Schema.Boolean,
   mobileTitlebarPosition: Schema.Literals(["top", "bottom"]),
   // Owned by the review extension, which copies it out once; kept so settings rewrites cannot drop it first.
@@ -130,6 +112,9 @@ const appearanceSchema = Persistence.struct({
   sans: Schema.String,
   terminal: Schema.String,
   tabLayout: Schema.Literals(["horizontal", "vertical"]),
+  // Documents persisted before this key existed would otherwise fail the whole struct decode and take
+  // the app down on start. The literal keeps Settings out of its own schema: defaultSettings is typed
+  // as Settings, so reading it here would make the type circular.
 })
 
 const permissionsSchema = Persistence.struct({
@@ -177,108 +162,17 @@ export const settingsSchema = Persistence.struct({
   sounds: soundsSchema,
 })
 
-function storedTimelineCategory(category: TimelineCategory) {
-  return Persistence.optional(
-    Schema.Union([
-      Persistence.legacy({
-        placement: Persistence.optional(placementSchema),
-        details: Persistence.optional(detailsSchema),
-      }),
-      Schema.Literals(["expanded", "collapsed", "hidden", "visible"]),
-    ]).pipe(
-      Schema.decode({
-        decode: SchemaGetter.transform((value) => {
-          if (!Predicate.isString(value)) return value
-
-          return {
-            placement:
-              value === "hidden"
-                ? "hidden"
-                : category === "subagents"
-                  ? "separate"
-                  : category === "tools"
-                    ? "grouped"
-                    : value === "expanded"
-                      ? "separate"
-                      : value === "collapsed"
-                        ? "grouped"
-                        : undefined,
-            details: value === "expanded" ? "expanded" : "collapsed",
-          }
-        }),
-        encode: SchemaGetter.passthrough(),
-      }),
-    ),
-  )
-}
-
-function legacyTimelineActivity(value: boolean | "hidden" | "compact" | "full" | null | undefined) {
-  if (value === undefined || value === null) return
-  const expanded = value === true || value === "full"
-
-  return {
-    placement: value === "hidden" ? "hidden" : expanded ? "separate" : "grouped",
-    details: expanded ? "expanded" : "collapsed",
-  } as const
-}
-
+// Rest-tolerant on purpose. The timeline density preference is gone, so every document written before it
+// removal still carries `timelineDetail` and the booleans that used to feed it; a plain struct would reject
+// the whole document rather than the retired keys, and the user would lose every unrelated setting with them.
 export const settingsPersistence = Persistence.migrate(
   settingsSchema,
-  Persistence.legacy({
-    general: Persistence.optional(
-      Persistence.legacy({
-        // Keep invalid explicit values distinct from absent values so legacy preferences cannot replace them.
-        timelineDetail: Schema.optional(
-          Schema.NullOr(
-            Persistence.legacy({
-              shell: storedTimelineCategory("shell"),
-              edit: storedTimelineCategory("edit"),
-              thinking: storedTimelineCategory("thinking"),
-              subagents: storedTimelineCategory("subagents"),
-              notices: storedTimelineCategory("notices"),
-              tools: storedTimelineCategory("tools"),
-            }),
-          ),
-        ).pipe(Schema.catchDecoding(() => Effect.succeed(Option.some(null)))),
-        reasoningMode: Schema.optional(Schema.NullOr(Schema.Literals(["hidden", "compact", "full"]))).pipe(
-          Schema.catchDecoding(() => Effect.succeed(Option.some(null))),
-        ),
-        showReasoningSummaries: Persistence.optional(Schema.Boolean),
-        shellToolPartsExpanded: Persistence.optional(Schema.Boolean),
-        editToolPartsExpanded: Persistence.optional(Schema.Boolean),
-      }),
-    ),
-  }).pipe(
-    Schema.decode({
-      decode: SchemaGetter.transform((value) => {
-        const general = value.general
-
-        if (!general || general.timelineDetail !== undefined) return value
-
-        return {
-          ...value,
-          general: {
-            ...general,
-            timelineDetail: {
-              shell: legacyTimelineActivity(general.shellToolPartsExpanded),
-              edit: legacyTimelineActivity(general.editToolPartsExpanded),
-              thinking: legacyTimelineActivity(
-                general.reasoningMode === undefined ? general.showReasoningSummaries : general.reasoningMode,
-              ),
-            },
-          },
-        }
-      }),
-      encode: SchemaGetter.transform((value) => value),
-    }),
-  ),
+  Persistence.legacy({ general: Persistence.optional(Persistence.legacy({})) }),
 )
 
 export const defaultSettings: Settings = {
   general: {
     showFileTree: false,
-    timelineDetail: { ...timelinePresets[2].value },
-    showCustomAgents: false,
     showTurnDiffs: false,
     mobileTitlebarPosition: "top",
     terminalPlacement: "side",
@@ -310,11 +204,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
     const [store, setStore, , ready] = persisted({ key: "settings.v3" }, settingsPersistence, defaultSettings)
     const showFileTree = withFallback(() => store.general?.showFileTree, defaultSettings.general.showFileTree)
 
-    const showCustomAgents = withFallback(
-      () => store.general?.showCustomAgents,
-      defaultSettings.general.showCustomAgents,
-    )
-
     createEffect(() => {
       if (typeof document === "undefined") return
       const root = document.documentElement
@@ -345,14 +234,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
         setShowFileTree(value: boolean) {
           setStore("general", "showFileTree", value)
         },
-        timelineDetail: withFallback(() => store.general?.timelineDetail, defaultSettings.general.timelineDetail),
-        setTimelineDetail(value: TimelineDetail) {
-          setStore("general", "timelineDetail", structuredClone(unwrap(value)))
-        },
-        showCustomAgents,
-        setShowCustomAgents(value: boolean) {
-          setStore("general", "showCustomAgents", value)
-        },
         showTurnDiffs: withFallback(() => store.general?.showTurnDiffs, defaultSettings.general.showTurnDiffs),
         setShowTurnDiffs(value: boolean) {
           setStore("general", "showTurnDiffs", value)
@@ -378,7 +259,6 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       },
       visibility: {
         fileTree: showFileTree,
-        customAgents: showCustomAgents,
       },
       appearance: {
         fontSize: withFallback(() => store.appearance?.fontSize, defaultSettings.appearance.fontSize),

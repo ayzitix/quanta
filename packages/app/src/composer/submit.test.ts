@@ -45,7 +45,6 @@ function controls(): ComposerControls {
       available: [{ name: "build", mode: "primary" }],
       options: ["build"],
       current: "build",
-      visible: true,
       select() {},
     },
     model: { selection, paid: true, loading: false },

@@ -14,6 +14,7 @@ import { createStore } from "solid-js/store"
 import { ResizeHandle } from "@opencode/ui/resize-handle"
 import { Slot, type BackgroundTask, type MountedSession, type SessionScreen } from "@opencode/gui-extensions/sdk"
 import { MessageTimeline } from "@/session/timeline/message-timeline"
+import { MessageEditorScope } from "@/composer/message-model-picker"
 import { ComposerDropzone } from "@/composer/dropzone"
 import { useSettings } from "@/settings/model"
 import type { SessionModel } from "@/session/model"
@@ -240,38 +241,48 @@ function SessionScreenContent(props: {
         return view.id === source.identity.sessionID() ? view : previous
       }, untrack(props.view))
 
+      // A cached timeline can outlive the composer it belongs to -- another session is routed, or this one
+      // has been torn down -- and there is no model to offer then, nor a prompt to edit.
+      const editable = composer.active()
+      if (!editable) return undefined
+
       return (
-        <MessageTimeline
-          active={active()}
-          hideHeader={!isDesktop()}
-          session={source}
-          view={own()}
-          screen={props.screen}
-          background={composer.requests.background}
-          actions={composer.actions.timeline}
-          scroll={timeline.scroll}
-          onResumeScroll={timeline.actions.resume}
-          setScrollRef={timeline.view.setScrollRef}
-          onScheduleScrollState={timeline.view.scheduleScrollState}
-          onPin={timeline.view.pin}
-          onUnpin={timeline.view.unpin}
-          onUserScroll={timeline.view.markUserScroll}
-          onHistoryScroll={timeline.view.onHistoryScroll}
-          onSelectionInteraction={timeline.view.selectionInteraction}
-          pinned={timeline.view.pinned()}
-          centered={screen.centered()}
-          reserveReviewToggle={!sideVisible()}
-          setContentRef={timeline.view.setContentRef}
-          anchor={timeline.view.anchor}
-          setRevealMessage={timeline.view.setRevealMessage}
-          reveal={timeline.view.reveal}
-          setScrollToEnd={timeline.view.setScrollToEnd}
-          search={
-            <Show when={active()}>
-              <TimelineSearchBar controller={timelineSearch} />
-            </Show>
-          }
-        />
+        <MessageEditorScope model={editable.composer}>
+          {(modelPicker) => (
+            <MessageTimeline
+              active={active()}
+              hideHeader={!isDesktop()}
+              session={source}
+              view={own()}
+              screen={props.screen}
+              background={composer.requests.background}
+              actions={composer.actions.timeline}
+              scroll={timeline.scroll}
+              onResumeScroll={timeline.actions.resume}
+              setScrollRef={timeline.view.setScrollRef}
+              onScheduleScrollState={timeline.view.scheduleScrollState}
+              onPin={timeline.view.pin}
+              onUnpin={timeline.view.unpin}
+              onUserScroll={timeline.view.markUserScroll}
+              onHistoryScroll={timeline.view.onHistoryScroll}
+              onSelectionInteraction={timeline.view.selectionInteraction}
+              pinned={timeline.view.pinned()}
+              centered={screen.centered()}
+              reserveReviewToggle={!sideVisible()}
+              setContentRef={timeline.view.setContentRef}
+              anchor={timeline.view.anchor}
+              setRevealMessage={timeline.view.setRevealMessage}
+              reveal={timeline.view.reveal}
+              setScrollToEnd={timeline.view.setScrollToEnd}
+              search={
+                <Show when={active()}>
+                  <TimelineSearchBar controller={timelineSearch} />
+                </Show>
+              }
+              modelPicker={modelPicker}
+            />
+          )}
+        </MessageEditorScope>
       )
     },
     () => conversationVisible() && messagesReady(),
@@ -357,7 +368,13 @@ function SessionScreenContent(props: {
 
       <Show when={composer.active()} keyed>
         {(model) => (
-          <ActiveSessionComposerRegion session={session} model={model} suggestionBoundary={timeline.scroller} />
+          <ActiveSessionComposerRegion
+            session={session}
+            model={model}
+            suggestionBoundary={timeline.scroller}
+            view={props.view}
+            screen={props.screen}
+          />
         )}
       </Show>
       <Show when={!isDesktop() && !!session.identity.params.id && bottomMobileTabs()}>{mobileTabs()}</Show>

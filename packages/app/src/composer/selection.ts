@@ -23,7 +23,6 @@ export function createComposerControls(input: { model?: ModelSelection } = {}) {
         available: normalizeAgentList(data.location.agent.list({ directory: sdk().directory }) ?? []),
         options: local.agent.list().map((agent) => agent.name),
         current: local.agent.current()?.name ?? "",
-        visible: local.agent.visible(),
         select: local.agent.set,
       },
       model: {
@@ -31,7 +30,7 @@ export function createComposerControls(input: { model?: ModelSelection } = {}) {
         paid: providers.paid().length > 0,
         loading:
           !(input.model ?? local.model).ready() ||
-          (local.agent.visible() && data.location.agent.list({ directory: sdk().directory }) === undefined) ||
+          data.location.agent.list({ directory: sdk().directory }) === undefined ||
           !providers.ready(),
       },
     }

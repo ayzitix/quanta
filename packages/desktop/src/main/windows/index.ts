@@ -29,6 +29,7 @@ import { makeWindowRecovery } from "./recovery"
 import { takeEarlyWindow, type EarlyWindow } from "./early"
 import { manageWindowState, readWindowState, resolveWindowState, windowStateFile } from "./window-state"
 import { allowRendererPermissions, wireNavigationPolicy, wireRendererHeaders } from "./security"
+import { PACKAGED } from "../constants"
 
 const themeReady = new WeakMap<BrowserWindow, () => void>()
 
@@ -178,7 +179,7 @@ export const makeMainWindows = Effect.fn("Window.make")(function* () {
     let revealed = !!early
 
     const focusForTests = () => {
-      if (app.isPackaged || process.env.OPENCODE_TEST_ONBOARDING !== "1") return
+      if (PACKAGED || process.env.OPENCODE_TEST_ONBOARDING !== "1") return
 
       if (process.platform === "darwin") app.focus({ steal: true })
       win.focus()

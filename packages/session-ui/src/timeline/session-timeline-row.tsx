@@ -66,6 +66,7 @@ export function createSessionTimelineRowRenderer(input: {
   projection: Projection
   presentation: (message: SessionMessageUser) => SessionUserPresentation | undefined
   actions?: SessionUserActions
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   reasoningMode: Accessor<ReasoningMode>
   shellToolDefaultOpen: Accessor<boolean>
   editToolDefaultOpen: Accessor<boolean>
@@ -478,6 +479,18 @@ export function createSessionTimelineRowRenderer(input: {
       classList={{
         "min-w-0 w-full max-w-full": true,
         "md:max-w-session md:mx-auto": input.centered?.(),
+        // The first assistant row of a turn has no spacing of its own, which left it flush against the
+        // question above it. A turn is one question and its answer, so `session-turn-list`'s gap applies
+        // between turns and never inside one: 12px here is the same measure the thought row keeps between its
+        // label and the reasoning, so the two distances in a turn are one distance.
+        //
+        // The live reasoning row carries it too, and that is the point: a stretch of thinking is a `Thinking`
+        // row while it streams and an ordinary `AssistantPart` the moment the turn ends, and `Thinking` has no
+        // `spacing` field for this list to match on. Without it the row sat at 0 while streaming and moved down
+        // 12px on completion -- a jump in the middle of the transcript, from the model finishing its turn.
+        "pt-3":
+          (Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === undefined) ||
+          Predicate.isTagged(props.row, "Thinking"),
         "pt-2": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "tool",
         "pt-4": Predicate.isTagged(props.row, "AssistantPart") && props.row.spacing === "content",
         "pt-6": Predicate.isTagged(props.row, "Error"),
@@ -803,6 +816,7 @@ export function createSessionTimelineRowRenderer(input: {
                       historicalAgent={context()?.agent ?? ""}
                       historicalModel={context()?.model ?? { id: "", providerID: "" }}
                       actions={input.actions}
+                      modelPicker={input.modelPicker}
                     />
                   </div>
                 </div>
@@ -929,28 +943,26 @@ export function createSessionTimelineRowRenderer(input: {
       return (
         <Frame row={current()}>
           <div data-slot="session-turn-message-container" class={`w-full ${padding()}`}>
-            <div data-slot="session-turn-thinking-row">
-              <Show when={content()}>
-                {(content) => (
-                  <AssistantReasoningContent
-                    id={current().ref.partID}
-                    content={content()}
-                    streaming
-                    defaultOpen={
-                      input.timelineDetail
-                        ? input.timelineDetail().thinking.details === "expanded"
-                        : input.reasoningMode() === "full"
-                    }
-                    open={
-                      input.disclosure.value(current().ref.partID) ??
-                      (input.timelineDetail ? input.timelineDetail().thinking.details === "expanded" : undefined)
-                    }
-                    onOpenChange={(open) => input.disclosure.set(current().ref.partID, open)}
-                    onContentRendered={onSizeChange}
-                  />
-                )}
-              </Show>
-            </div>
+            <Show when={content()}>
+              {(content) => (
+                <AssistantReasoningContent
+                  id={current().ref.partID}
+                  content={content()}
+                  streaming
+                  defaultOpen={
+                    input.timelineDetail
+                      ? input.timelineDetail().thinking.details === "expanded"
+                      : input.reasoningMode() === "full"
+                  }
+                  open={
+                    input.disclosure.value(current().ref.partID) ??
+                    (input.timelineDetail ? input.timelineDetail().thinking.details === "expanded" : undefined)
+                  }
+                  onOpenChange={(open) => input.disclosure.set(current().ref.partID, open)}
+                  onContentRendered={onSizeChange}
+                />
+              )}
+            </Show>
           </div>
         </Frame>
       )

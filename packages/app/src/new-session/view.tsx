@@ -12,7 +12,7 @@ import {
   PromptProjectAddButton,
   PromptProjectSelector,
   type PromptProjectController,
-} from "@/new-session/project/selector"
+} from "@/projects/picker"
 import { useLanguage } from "@/runtime/i18n/language"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useProviders } from "@/providers/catalog/providers"
@@ -20,7 +20,6 @@ import { NEW_SESSION_CONTENT_WIDTH } from "@/new-session/layout"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
 import type { NewSessionWorkspaceController } from "./workspace/controller"
-import { NewSessionWordmark } from "./wordmark"
 
 const providerTipDismissalDuration = 30 * 24 * 60 * 60 * 1000
 
@@ -61,16 +60,19 @@ export function NewSessionView(props: {
           active={props.composer.state.drag === "active"}
           input={props.composer.model.selection.current()?.capabilities.input}
         />
-        <div class="absolute inset-x-0 top-[25.375%] flex justify-center px-6">
+        <div class="absolute inset-0 flex items-center justify-center px-6">
           <div class={NEW_SESSION_CONTENT_WIDTH}>
-            <NewSessionWordmark />
-            <div class="mt-8 flex flex-col gap-8">
-              <Composer model={props.composer} />
+            {/* The context row sits above the tray and hangs off its leading edge, not centred under the
+                bar. It names where the prompt is going, which is the sentence's own furniture, so it reads
+                with the field it qualifies; centred underneath it read as a status line for the whole panel
+                and left the three controls marooned in the middle of an otherwise left-weighted stack. The
+                gap is tight for the same reason — these are the tray's header, not a section of their own. */}
+            <div class="flex flex-col gap-2">
               <Show when={props.project.empty()}>
                 <PromptProjectAddButton controller={props.project} />
               </Show>
               <Show when={props.project.selected()}>
-                <div class="flex min-h-7 min-w-0 flex-row flex-wrap items-center justify-center gap-0 text-v2-text-text-faint">
+                <div class="flex min-h-7 min-w-0 flex-row flex-wrap items-center justify-start gap-0 text-v2-text-text-faint">
                   <PromptProjectSelector controller={props.project} placement="bottom" />
                   <Show
                     when={props.workspace.bar.visible()}
@@ -98,6 +100,7 @@ export function NewSessionView(props: {
                   </Show>
                 </div>
               </Show>
+              <Composer model={props.composer} />
             </div>
           </div>
         </div>

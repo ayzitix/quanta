@@ -5,11 +5,10 @@ import { batch, createEffect, createMemo, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Schema, SchemaGetter } from "effect"
 import { useModels } from "@/providers/models/models"
-import { useSettings } from "@/settings/model"
 import { useProviders } from "@/providers/catalog/providers"
 import { Persist, persisted } from "@/runtime/persistence/storage"
 import { Persistence } from "@/runtime/persistence/schema"
-import { hasCustomAgent, resolveAgent } from "./agent"
+import { resolveAgent } from "./agent"
 import { cycleModelVariant, getConfiguredAgentVariant, resolveModelVariant } from "./variant"
 import { useWorkspaceLocation } from "@/workspaces/location"
 import { useData } from "@/runtime/server/current"
@@ -87,7 +86,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
     const serverSDK = useServerSDK()
     const providers = useProviders(() => sdk().directory)
     const models = useModels()
-    const settings = useSettings()
     const configuredModel = useConfiguredModel()
 
     const id = createMemo(() => params.id || undefined)
@@ -98,7 +96,6 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
       ),
     )
 
-    const agentsVisible = createMemo(() => settings.visibility.customAgents() || hasCustomAgent(list()))
     const connected = createMemo(() => new Set(providers.connected().map((item) => item.id)))
 
     const [saved, setSaved, , savedReady] = persisted(
@@ -206,9 +203,8 @@ export const { use: useLocal, provider: LocalProvider } = createSimpleContext({
 
     const agent = {
       list,
-      visible: agentsVisible,
       current() {
-        return pickAgent(scope()?.agent ?? durable()?.agent ?? (agentsVisible() ? store.current : "build"))
+        return pickAgent(scope()?.agent ?? durable()?.agent ?? store.current)
       },
       set(name: string | undefined) {
         const item = pickAgent(name)

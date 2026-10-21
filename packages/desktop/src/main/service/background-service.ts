@@ -5,6 +5,7 @@ import { cleanStages } from "./cli-stages"
 import { DesktopCli } from "./desktop-cli"
 import { SidecarCredentials } from "./sidecar-credentials"
 import { sidecarProbe } from "./sidecar-probe"
+import { PACKAGED } from "../constants"
 
 export * as BackgroundService from "./background-service"
 
@@ -34,7 +35,7 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
   const path = yield* Path.Path
   const desktopCli = yield* DesktopCli.Service
   const runFork = Effect.runForkWith(yield* Effect.context<FileSystem.FileSystem | Path.Path>())
-  const isolated = !app.isPackaged && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1"
+  const isolated = !PACKAGED && process.env.OPENCODE_DESKTOP_ISOLATED_SERVER === "1"
   const cli = yield* desktopCli.resolve
   const version = mode === "initial" ? cli.version : undefined
 
@@ -79,7 +80,7 @@ const connect = Effect.fn("BackgroundService.connect")(function* (mode: "initial
 
   // Only packaged and isolated builds run a staged copy; any other binary sits in the source tree.
   // The service now runs the current version, so an older copy at most belongs to a process still exiting.
-  if (mode === "initial" && (app.isPackaged || isolated) && cli.binary)
+  if (mode === "initial" && (PACKAGED || isolated) && cli.binary)
     runFork(
       cleanStages(cli.binary).pipe(
         Effect.catch((error) => Effect.logError("failed to clean staged v2 CLIs", { error })),

@@ -1,4 +1,5 @@
 import type { SessionMessageUser } from "@opencode/client/promise"
+import { isMessageNotFoundError } from "@/runtime/server/errors"
 import { useComposerState } from "@/composer/persistence"
 import { useData } from "@/runtime/server/current"
 import { useServerSDK } from "@/runtime/server/client"
@@ -20,14 +21,18 @@ export function createSessionRevert(input: {
   const location = useWorkspaceLocation()
   const language = useLanguage()
 
-  const request = async <A>(action: () => Promise<A>) =>
+  // `reached` names the failures that mean the state the caller was reaching for already holds, so the toast
+  // would report a problem the user cannot act on. Rewinding a message the server no longer has is that: the
+  // message is gone, which is what the rewind was for. Anything else stays visible.
+  const request = async <A>(action: () => Promise<A>, reached?: (error: unknown) => boolean) =>
     action()
       .then(() => true)
       .catch((error) => {
-        showToast({
-          title: language.t("common.requestFailed"),
-          description: error instanceof Error ? error.message : String(error),
-        })
+        if (!reached?.(error))
+          showToast({
+            title: language.t("common.requestFailed"),
+            description: error instanceof Error ? error.message : String(error),
+          })
 
         return false
       })
@@ -69,7 +74,15 @@ export function createSessionRevert(input: {
 
     if (!(await request(() => server.api.session.wait({ sessionID })))) return
 
-    if (!(await request(() => server.api.session.revert.stage({ sessionID, messageID: message.id })))) return
+    // A message the server no longer has is already rewound, so the caller continues and submits as intended
+    // rather than being told about a failure it cannot cause or repair.
+    if (
+      !(await request(
+        () => server.api.session.revert.stage({ sessionID, messageID: message.id }),
+        (error) => isMessageNotFoundError(error, message.id),
+      ))
+    )
+      return
     // Like the TUI, pending inputs are left alone: the revert hides them, committing it drops them,
     // and redo delivers them.
     restore(target, message)

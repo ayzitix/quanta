@@ -22,6 +22,8 @@ import { requireServerKey, sessionHref } from "@/shell/routes/session"
 import { useComposerCommands } from "@/composer/commands"
 import { useSessionCommands } from "../commands/use-session-commands"
 import type { SessionModel } from "../model"
+import type { MountedSession, SessionScreen } from "@opencode/gui-extensions/sdk"
+import { ExtensionSlot } from "@/runtime/extension/render"
 import type { SessionScreenLayout } from "../screen-layout"
 import { syncPromptModel } from "../session-model-helpers"
 import type { SessionTimelineInteraction } from "../timeline/interaction"
@@ -33,6 +35,7 @@ import { resolveSessionComposerSelection } from "./selection"
 import { createSessionRequestModel } from "../requests/model"
 import type { Region } from "@/runtime/extension/panels"
 import { SessionLocationMissing } from "./location-missing"
+import { SessionContextRow } from "./session-context-row"
 
 export function createActiveSessionRegion(input: {
   session: SessionModel
@@ -190,6 +193,31 @@ export function createActiveSessionRegion(input: {
 
   const revertMessage: NonNullable<SessionUserActions["revert"]> = ({ messageID }) => revert.to(messageID)
 
+  // Rewind to this message and re-send it with different text, leaving the composer draft alone. `revert.to`
+  // restores the original prompt into the draft, which is right when the composer is the editing surface and
+  // wrong here: the edit is in the transcript and the draft is unrelated work in progress. So the draft is
+  // captured before and put back after. It cannot simply be skipped -- `restore` is what keeps the message's
+  // attachments and comments attached to the re-sent turn.
+  const resendMessage: NonNullable<SessionUserActions["resend"]> = async ({ messageID, text }) => {
+    const controller = active()
+    if (!controller) return
+
+    const target = prompt.capture()
+    const draft = target.current()
+
+    await revert.to(messageID)
+    // The draft is a list of parts, not a string, so plain text has to become one part with its own offsets.
+    target.set([{ type: "text", content: text, start: 0, end: text.length }])
+    try {
+      // Not awaited and not promisified: `submit` clones the draft synchronously before its first `await`, so
+      // the text is already captured by the time this returns. Waiting on it would only be a lie -- the call
+      // is fire-and-forget, and restoring the draft straight after is what makes it safe.
+      controller.composer.submit()
+    } finally {
+      target.set(draft)
+    }
+  }
+
   const notifyFailed = () => {
     showToast({ title: language.t("common.requestFailed") })
   }
@@ -275,6 +303,11 @@ export function createActiveSessionRegion(input: {
 
           return revertMessage
         },
+        get resend() {
+          if (input.session.data.isChild()) return
+
+          return resendMessage
+        },
         get pending() {
           if (input.session.data.isChild()) return
 
@@ -293,6 +326,9 @@ export function ActiveSessionComposerRegion(props: {
   session: SessionModel
   model: SessionComposerController
   suggestionBoundary: () => HTMLElement | undefined
+  /** The routed session and its screen, for the extension slot the composer's bar renders. */
+  view: Accessor<MountedSession>
+  screen: SessionScreen
 }) {
   const location = useWorkspaceLocation()
 
@@ -317,12 +353,31 @@ export function ActiveSessionComposerRegion(props: {
             <div class="relative">
               <SessionQueuePanel queue={props.model.queue} />
               <div class="relative z-10">
-                <Composer
-                  model={props.model.composer}
-                  borderUnderlay
-                  readOnly={props.model.queue.undoing()}
-                  suggestionBoundary={props.suggestionBoundary}
-                />
+                {/* Above the tray, not in the bar: this row says where the session is, which the
+                    sentence qualifies rather than the instrument cluster configures. The bar below is
+                    inputs — agent, model, thinking power — and a location is none of those. */}
+                <div class="flex flex-col gap-2">
+                  <SessionContextRow session={props.session} onDone={() => props.model.composer.restoreFocus()} />
+                  <Composer
+                    model={props.model.composer}
+                    borderUnderlay
+                    readOnly={props.model.queue.undoing()}
+                    suggestionBoundary={props.suggestionBoundary}
+                    barSlot={
+                      <ExtensionSlot
+                        at="session.composer.bar"
+                        input={{
+                          get session() {
+                            return props.view()
+                          },
+                          get screen() {
+                            return props.screen
+                          },
+                        }}
+                      />
+                    }
+                  />
+                </div>
               </div>
             </div>
           }

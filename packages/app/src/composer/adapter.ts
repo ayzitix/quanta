@@ -12,7 +12,6 @@ export type ComposerControls = {
     available: { name: string; hidden?: boolean; mode: string }[]
     options: string[]
     current: string
-    visible: boolean
     select: (name: string | undefined) => void
   }
   model: {

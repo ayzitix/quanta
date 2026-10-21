@@ -13,6 +13,10 @@
     },
   },
   "mcp": {},
+  // The visual rules live in packages/desktop/AGENTS.md, but almost all the UI we style is in
+  // packages/app and packages/ui. Directory-walked AGENTS.md discovery would only pick them up when working
+  // under packages/desktop, so register the file as a project instruction instead.
+  "instructions": ["packages/desktop/AGENTS.md"],
   "tools": {
     "github-triage": false,
     "github-pr-search": false,

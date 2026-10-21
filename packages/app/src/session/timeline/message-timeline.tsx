@@ -72,6 +72,8 @@ type MessageTimelineProps = {
   screen: SessionScreen
   background: SessionBackground
   actions?: SessionUserActions
+  /** What a user message being edited needs from the app; see `SessionTimelineProps`. */
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
   scroll: { overflow: boolean; jump: boolean }
   onResumeScroll: () => void
   setScrollRef: (el: HTMLDivElement | undefined) => void
@@ -304,6 +306,7 @@ function MessageTimelineView(
       }
     },
     actions: props.actions,
+    modelPicker: props.modelPicker,
     reasoningMode: props.data.reasoningMode,
     shellToolDefaultOpen: props.data.shellToolPartsExpanded,
     editToolDefaultOpen: props.data.editToolPartsExpanded,
@@ -358,6 +361,12 @@ function MessageTimelineView(
       return false
     const content = assistant?.content.at(-1)
 
+    // Reasoning says the same thing this row says. The projection moves an unfinished stretch of thinking into
+    // its own `Thinking` row inside the timeline, so showing "Working" underneath it puts two live indicators
+    // for one fact on screen at once -- and the shift between them is visible in the middle of the turn, not at
+    // the end of it. The text case above is the same suppression for the same reason.
+    if (content?.type === "reasoning") return false
+
     if (
       assistant?.time.completed === undefined &&
       assistant?.time.streamed === undefined &&
@@ -406,7 +415,7 @@ function MessageTimelineView(
           "md:max-w-session md:mx-auto": props.centered,
         }}
       >
-        <div class={`flex h-9 items-center gap-2 pt-3 text-[13px] font-[530] leading-text-compact ${turnPadding()}`}>
+        <div class={`flex h-11 items-center gap-2 pt-3 text-[13px] font-[530] leading-text-compact ${turnPadding()}`}>
           <Show when={showWorking()}>
             <div data-component="session-working" role="status">
               <TextShimmer text={language.t("session.timeline.working")} active />

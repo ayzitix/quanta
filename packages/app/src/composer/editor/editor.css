@@ -25,6 +25,345 @@
   );
 }
 
+/* 10px, and the radius is a plain number on purpose. This was `9999px`, which resolves against the box and
+   puts a semicircle at both ends at every height, so the tray read as a capsule rather than a field. A
+   percentage radius was the wrong tool for the same reason: it resolves against the box too.
+
+   No `corner-shape`. Four variants were tried here -- 18px, 8px, `superellipse(3)`, and `squircle` carried
+   through to the rim -- and each measured exactly what it declared while looking like a different control
+   rather than the same tray. The default ellipse under a modest radius is the shape the rest of the app uses.
+
+   `box-shadow` is declared as `none` rather than omitted. Cursor does the same thing as a token it can
+   override, and the distinction is practical: an absent shadow is something nobody decided, and a declared
+   one is something a later rule can replace without unwinding this file. */
+/* Pronounced, like the instruments' tray below it: exponent 2, which is the squircle itself, and a radius
+   long enough to read as a curve rather than a small round. 18px on a 42px tray is clear of the clamp --
+   `corner-shape` falls back to an ellipse past half the shortest side, so 21px is the ceiling here.
+
+   Raising the exponent is not how a corner gets rounder; it straightens it. That was tried at 3 and the
+   corners came out sharp, which is the opposite of the shape. The exponent says what the curve is, the
+   radius says how much of it there is. */
+[data-component="composer"] {
+  border-radius: 18px;
+  corner-shape: squircle;
+  box-shadow: none;
+  /* Above the instruments' tray, which is drawn behind it. Nothing else in the composer stacks against
+     this, so a single level is enough and it is declared here rather than as a negative one on the bar:
+     the bar is the thing being hidden, and it should not have to know who covers it. */
+  z-index: 10;
+}
+
+/* The instruments carry a tray of their own, inset by the tray's radius and rounded only where it is
+   exposed. Its top edge is square because it sits behind the text tray, pulled up 8px by `-mt-2`, and those
+   8px are never seen -- rounding them would draw a curve under the text field's bottom edge, which is
+   exactly the seam this arrangement exists to remove.
+
+   A contour and no fill, on the same reasoning as the send mark: a second opaque surface under an opaque
+   one reads as a stacked pair of controls. `border` rather than the tray's masked `::before`, because the
+   pseudo-element there exists to keep a real border from eating the content box and a size is derived from
+   that box -- nothing here is, so the simpler property is the right one. */
+[data-slot="composer-bar"] {
+  /* Pronounced means a longer curve, not a straighter corner. `squircle` is exponent 2 and it is the shape
+     itself; raising the exponent to 3 was tried here and made the corners sharper, which is the opposite of
+     what a squircle is. What makes it read at this size is the radius: 10px on a shallow 34px shape is a
+     small round either way.
+
+     The radius is bounded by the height, not by taste. `corner-shape` clamps an oversized radius back to
+     an ellipse, and the clamp bites past half the shortest side -- at a 34px visible height that ceiling is
+     17px, so 16px is the most curve this basket can carry and still be a squircle.
+
+     Growing the basket to 48px was tried to buy more curve, and it did: a ceiling of 21px and room for 20px.
+     It was reverted, because a basket that grows to be rounder is not a trade worth making. Past 17px at
+     this height the corner stops being a squircle and becomes a plain ellipse, which is rounder still and
+     is not what this is. */
+  border-radius: 0 0 16px 16px;
+  corner-shape: squircle;
+  border: 1px solid var(--v2-border-border-muted);
+}
+
+/* A permanent hairline so the tray reads as a field on a flat page, which it does not when the only
+   affordance appears on focus. It is a pseudo-element rather than a border for two reasons: a real border
+   eats a pixel of the tray's content box and breaks the 40px height the button inset is derived from, and a
+   box-shadow here would replace the mask ring from [data-dock-border-underlay] instead of stacking on it. */
+[data-component="composer"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Said again rather than inherited: `corner-shape` does not inherit, so without this the rim is an
+     ellipse at the tray's radius while the tray under it is a squircle. One pixel of mismatch is what makes
+     a rim look fitted for the shape the tray used to be. */
+  corner-shape: inherit;
+  border-radius: inherit;
+  padding: 1px;
+  background-color: var(--v2-border-border-muted);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  transition: background-color 150ms cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+/* The entire focus affordance: the rim steps from 8% white to 12% and back over 150ms. This replaces a 3s
+   conic-gradient glint that swept light around the whole perimeter, and the three references agree on the
+   replacement — Cursor moves its stroke 8%→12% over the same 150ms, Claude Desktop moves an inset ring
+   10%→20% over 200ms, and Codex spends its whole focus budget on a transparent outline, i.e. nothing. All
+   three spend their budget on a single alpha step. An animated three-second highlight has no counterpart in
+   any of them, and on an empty screen it was the loudest thing there. */
+[data-component="composer"]:is(:hover, :focus-within)::before {
+  background-color: var(--v2-alpha-light-12);
+}
+
+/* Neither bar tray carries a surface. Each holds one round mark now that the model moved into the text tray,
+   and an outlined pill around a single mark reads as a second control rather than as the mark itself — the
+   ring already brings its own stroke. Both stay in the DOM as hit area and as the anchor the chip radius
+   rule hangs off. They have no contour of their own to shape, so only their chips do. */
+[data-slot="composer-controls-tray"],
+[data-slot="composer-bar-slot-tray"] {
+  position: relative;
+}
+
+/* The chips take their tray's contour and sit inset inside it, so a hover fill reads as a chip inside the
+   tray rather than as the tray itself changing. Each button variant carries a small circular radius, which
+   pastes a square block into a round tray the moment it fills, and its own height, which would run the fill
+   into the tray's rim. The rule is unlayered for the reason the hover rule is: a layered rule loses to the
+   Tailwind utility and to the inline height it replaces. `button.css` is layered, so this also beats the
+   variant's own radius, which is why the model chip carries no `!rounded-full` to be overridden.
+
+   No `corner-shape`: Cursor's tokens carry none anywhere, and a squircle inset inside a pill tray is two
+   shape languages in one control.
+
+   The leading group is not a tray — it draws no surface and carries no rim — but the chip inside it needs
+   the same contour, or the row has two contour languages either side of the gap. */
+[data-slot="composer-leading"] button,
+[data-slot="composer-controls-tray"] button {
+  height: 24px;
+  border-radius: 9999px;
+}
+
+[data-slot="composer-bar-slot-tray"] button {
+  border-radius: 9999px;
+}
+
+/* The model chip is in the bar, so it takes its contour from here rather than from the slot rules above,
+   which reach only the two bar trays. Its own label width follows the session, which is what the measured
+   trailing padding on the editor exists for. */
+[data-slot="composer-controls-tray"] [data-action="composer-model"] {
+  height: 24px;
+  border-radius: 9999px;
+}
+
+/* Cursor's model trigger takes no fill on hover at all — it lifts the label from 74% to 100% and stops
+   there, with `transition-duration: 0s`. Every chip in this tray used to fill on hover, which put eight
+   separate blocks into a row whose surface is 6% white; a label that brightens is the cheaper signal and
+   the one the reference uses. */
+[data-component="composer"] [data-action="composer-model"]:hover {
+  background-color: transparent;
+}
+
+[data-component="composer"] [data-action="composer-model"]:hover {
+  color: var(--v2-text-text-base);
+}
+
+/* Three more controls carry the hover fill and so need the contour named, because none of them sits in a slot
+   the rules above can reach. The two in the tray are its text buttons — exit-shell and the delivery-mode
+   toggle. The project picker is a component button from the new-session stack, out here at 28px with a 4px
+   radius, which is why it is named separately rather than folded into the 24px rule.
+
+   Declared here rather than on the feature's own classes because this file is unlayered and outranks them,
+   and because the radius has to move with the height — one is the other's consequence at these sizes, and
+   splitting them across two files is how they drift apart. */
+[data-action="composer-exit-shell"],
+[data-action="composer-alternate-delivery"],
+[data-action="prompt-project"] {
+  border-radius: 9999px;
+}
+
+/* The attach mark sits at 6px with no `corner-shape`, matching Cursor's control radius rather than the
+   tray's. The tray is a pill, so a pill-shaped button inside it would be a smaller pill, and two radii
+   where one language is enough reads as two components rather than one control group. Send is the
+   exception and is round, because it is the one filled control on the surface. */
+[data-action="composer-attach"] {
+  border-radius: 6px;
+}
+
+[data-action="composer-submit"] {
+  border-radius: 9999px;
+}
+
+/* The two marks take a fill on hover, and Cursor's is 8% white — the same step as the rim, where the shared
+   ghost token is 4%. Declared here rather than by changing the token because that token belongs to every
+   ghost button in the product, and this file is unlayered so it outranks `icon-button.css` regardless.
+   Send is excluded: it declares its own colour below, and inheriting a ghost hover here would replace it. */
+[data-component="composer"]
+  [data-component="icon-button-v2"]:is(:hover, [data-state="hover"]):not(:disabled):not([data-expanded]):not(
+    [data-action="composer-submit"]
+  ) {
+  background-color: var(--v2-alpha-light-8);
+}
+
+/* The effort window takes the shared squircle menu language — flat, a 20px squircle, the tray's hairline rim —
+   and opts out of one part of it. It keeps the menu's 2px gutter because its panel carries its own `p-3` and
+   the knob's travel is measured against the track's own box, so removing the gutter would shift a window whose
+   geometry is already tuned without changing anything that reads better. The shape and rim are not repeated
+   here; they live with the rest of the menu modifier so no two windows can drift apart. */
+[data-component="menu-v2-content"].composer-effort-popover {
+  padding: 2px;
+}
+
+/* Drifting dots across the effort track, one keyframe paced per dot inline: a dot fades in just past the
+   edge, holds, and fades out before the far edge, so nothing pops at the boundary. They peak at half
+   opacity: at full strength seven of them crossing a 24px track read as debris rather than as motion, and
+   the pace already carries the level, so the dots do not need to shout it as well. The element's own
+   `opacity` is the animated property, so this is the only place the peak can live. */
+@keyframes composer-effort-dot {
+  from {
+    transform: translateX(-8px);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(232px);
+    opacity: 0;
+  }
+}
+
+/* The darkening under the knob: a contact shadow, not a plate. A flat fill at one opacity is a rectangle with
+   two hard vertical edges sitting on the line, which reads as a patch stuck on top rather than as depth under
+   the handle. The gradient is darkest under the knob itself and falls away to nothing at both ends, so the
+   fill keeps its colour everywhere the eye actually compares it.
+
+   Declared here because `bg-v2-alpha-dark-40` generates nothing in this Tailwind build — the class compiled,
+   the element stayed transparent, and the contrast simply was not there. The colour is a translucent black
+   rather than one of the border roles: those are light overlays in the dark theme, the wrong direction for a
+   shadow under the one light mark on this track. */
+/* The knob's corners. `corner-shape` is declared here for the same reason as the shade below: the
+   `corner-shape-squircle` utility is not in this Tailwind build, so the class compiles and does nothing. */
+[data-slot="composer-effort-knob"] {
+  corner-shape: squircle;
+}
+
+[data-slot="composer-effort-knob-shade"] {
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    var(--v2-alpha-dark-40) 34%,
+    var(--v2-alpha-dark-40) 66%,
+    transparent
+  );
+}
+
+.composer-effort-particle {
+  position: absolute;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--v2-text-text-contrast);
+  opacity: 0;
+  animation-name: composer-effort-dot;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* The add control doubles as the menu's dismiss: 45° turns the plus into a cross, which spares the bar a
+   second slot that only exists while the menu is open. Kobalte puts data-expanded on the trigger, so no open
+   state has to cross into the component. Unlayered on purpose: the closed colours are Tailwind utilities, and
+   a layered rule would lose to them.
+
+   There is no fill rule here at any state, open or closed, and that is the point. It carried a grey pill
+   while it lived inside the tray, then a near-white inverted pill when open — a block that inverted to white
+   in the middle of a row of muted marks read as an alert, not as "this menu is showing". The rotation is the
+   whole disclosure now, and `ghost-muted` already gives the open state its own pressed overlay, which is the
+   same affordance every other mark in the bar uses.
+
+   The colour is set here rather than by choosing a variant, because `ghost-muted` is not one colour.
+   `button-v2` gives its label `--v2-text-text-muted` while `icon-button-v2` gives the whole control
+   `--v2-icon-icon-muted`, a step darker — so an icon-only button on that variant sits visibly below its
+   neighbours whichever of the two it happens to inherit. Taking the chips' label token is what makes the row
+   read as one set, and the open state mirrors theirs at `--v2-text-text-base`. Unlayered, to beat the
+   variant's own colour at (0,2,0). */
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"] {
+  color: var(--v2-text-text-muted);
+}
+
+/* Send is the one filled control on the surface: a white disc with a dark glyph. Codex does exactly this —
+   `bg-primary-solid` at `--gray-fixed-150` with the label inverted — and it is the only saturated object in
+   its tray, everything else being 5-12% alpha. A disc reads as "this is the thing you press" in a way a
+   bare glyph does not, and the inverse glyph is legible on a light fill where a 37%-grey one would vanish.
+
+   The disc is unconditional. Gating it on `canSubmit` was tried and reads wrong: the control appears and
+   disappears as you type, so the tray's one filled object is also the only thing that moves, and at the
+   moment you start typing the thing you are looking at is the thing that appeared. An empty field is
+   communicated by the dimmed glyph instead, which is where the information actually is.
+
+   These live here rather than on the trigger because this file is unlayered, and unlayered beats every
+   `@layer` — including Tailwind's `utilities`, which is where a colour class would go. That is also why the
+   stop state cannot be a utility: once these are declared here, a `text-v2-state-fg-danger` on the trigger
+   loses to both of them and the stop mark comes out in the resting tone. Note the direction of the
+   cascade, because it is easy to get backwards: a colour utility does beat `icon-button.css`'s own `color`
+   (verified — adding `text-v2-state-fg-danger` to an untouched `ghost-muted` icon button turns it pink). */
+/* Send is a mark on the tray, not a disc. The white fill was here for as long as the tray was a pill and it
+   was the only saturated object on the surface; with the tray squared off and the model moved into the bar,
+   a filled circle reads as a second, louder button rather than as the send affordance. Nothing on hover
+   either -- an eight-percent lift is what the other marks take, and the ghost hover rule above already
+   excludes this one, so there is nothing to override. */
+
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"] {
+  color: var(--v2-text-text-base);
+}
+
+[data-action="composer-submit"][data-component="icon-button-v2"][data-variant="ghost"]:disabled {
+  opacity: 0.45;
+}
+
+[data-action="composer-attach"][data-component="icon-button-v2"][data-variant="ghost-muted"][data-expanded] {
+  color: var(--v2-text-text-base);
+}
+
+[data-action="composer-attach"] [data-slot="icon-svg"] {
+  transition: transform 180ms ease;
+}
+
+[data-action="composer-attach"][data-expanded] [data-slot="icon-svg"] {
+  transform: rotate(45deg);
+}
+
+/* Both bar chips flip their caret while their window is open — the same disclosure the add button gives
+   with its 45° turn, keyed on the same attribute. `Menu.Trigger` publishes `[data-expanded]`, so a rule
+   written against `aria-expanded` silently never matches; the second selector covers the hand-built
+   drawer trigger, which publishes the ARIA state instead. The trigger is hooked by `data-action` rather
+   than by its `aria-label`, which is a translated string. The add control's own 45° turn is above and is not
+   part of this: it rotates a glyph into a cross, not a caret. */
+[data-action="composer-model"] [data-slot="icon-svg"],
+[data-action="composer-agent"] [data-slot="icon-svg"],
+[data-action="composer-variant"] [data-slot="icon-svg"] {
+  transition: transform 180ms ease;
+}
+
+[data-action="composer-model"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"],
+[data-action="composer-agent"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"],
+[data-action="composer-variant"]:is([data-expanded], [aria-expanded="true"]) [data-slot="icon-svg"] {
+  transform: rotate(180deg);
+}
+
+/* The vertical scroll thumb rides the trailing edge, which is exactly where the actions row floats, and the
+   two overlap. The row is not a fixed width — it carries the model chip, whose length follows the session — so
+   the offset is taken from the measured row the text padding already uses, plus the row's own 8px inset. A
+   fixed number here is what left the thumb stranded between the chip and the send button. */
+[data-component="composer"] .scroll-view__thumb[data-orientation="vertical"] {
+  inset-inline-end: calc(var(--composer-actions, 24px) + 8px);
+}
+
 @media (hover: hover) {
   [data-component="composer"]:not(:hover) .composer-variant-default:not(:focus-visible, [data-expanded]) {
     opacity: 0;

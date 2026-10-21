@@ -172,6 +172,87 @@ const table = sqliteTable("session", {
 - Run `bun run check` from the repository root as the canonical full lint and type-check verification.
 - During focused iteration, run `bun typecheck` from the affected package directory (for example, `packages/core`). Never run `tsc` directly.
 
+## The system prompt
+
+`packages/core/src/session/runner/prompt/system.txt` is what every session starts from. `system-prompt.ts`
+substitutes `${OPENCODE_TOOL_GUIDANCE}` with per-tool instructions, so the placeholder must survive verbatim — the
+replacement is a plain `String.replace`, and nothing validates that it fired.
+
+It is written as instructions to a person, not as a description of the harness. It opens by saying what the work
+is, not what a harness is, because a prompt that explains itself has no room left to command.
+
+**The load-bearing rule is the second paragraph, and it is the one most likely to be "cleaned up" by mistake.**
+A declarative rule about the agent's character — _I never hide anything_, _I always ask first_, _I can't lie_ —
+is satisfied by producing those words and changes no behaviour. The agent will recite the virtue instead of
+acting on it, and the failure is invisible because the reply looks like compliance. So the prompt forbids
+describing itself through its own rules and names the phrases in the forbidding, which makes the rule checkable
+rather than a matter of tone. Adding any rule phrased as a property of the agent's character reintroduces this;
+`care what it is for` in the project section is the one virtue left, kept as motivation for the orientation rule
+that follows it.
+
+**Asking is three tiers, not one test.** _Act_ when there is no real choice or it makes no difference to the
+work; _act and say_ when a real choice exists but guessing wrong is cheap to fix, then state the assumption in a
+line; _ask_ when guessing wrong would cost real work. A single test cannot separate these — "ask when the answer
+changes what you do" and "otherwise act" pull in opposite directions, and ordering them does not resolve it,
+because the model reads both. The middle tier is what makes the other two coherent, and it has no precedent in
+any competitor prompt.
+
+A question is also sorted by cost rather than by topic: how much a wrong guess would cost decides what goes
+first, independent questions go in one message, and three is a ceiling rather than a target. Without those,
+"ask" degrades into an interrogation and the tiering decides nothing.
+
+**An ambiguous word is a fork, and it outranks everything else.** A name or typo that can be read two ways gets
+asked about before any question about stack, scope or style, and is never silently corrected when the
+correction changes what gets built. This has no counterpart anywhere in the 104 surveyed prompts: `auth` means
+both authentication and authorization, and no competitor treats that as an ambiguity at all. In a head-to-head,
+Claude Code asked what the bug was and missed the fork entirely; this prompt named four candidate subsystems
+from the repository it was standing in. The reason it needs saying is that a typo is not read as a reading —
+the model normalises it as noise — so `two honest readings` alone never fires on one.
+
+**Ask only when the answer is a decision, not when a detail is missing.** `three is a ceiling, not a target` and
+the rule against spending a question on what tier 1 or 2 already covers exist because user research is one-sided:
+every complaint found about these tools is about too many questions, none about too few. Named symptoms are
+"just build it", "I don't care" and "back and forth". Users write explicit "never ask without a consequential
+fork" overrides to fight the default, which is the three tiers restated. Tier 1 defaults to deciding for that
+reason, and the structure should not be tilted toward asking without new evidence that this specific agent
+freezes.
+
+_An answer settles the question asked; it is not a second approval gate_ governs the turn after a question, and it
+is the only valve the prompt carries. It matters more than its length suggests, because the ask side was widened
+this round — an ambiguous word became a fork of its own — and every valve on the other side of the question is
+worthless at the moment of deciding whether to ask it. There was once a second one, _a clear, complete request is
+an instruction rather than an invitation to negotiate_; it was dropped in a rewrite and is not back. Tier 1
+covers it by implication and a six-prompt comparison showed every agent inferring it unprompted, so it is
+absent on evidence rather than by oversight. Re-add it if asking at the moment of decision ever becomes the
+observed failure.
+
+**Reversibility and scope act on disjoint objects.** Scope covers what exists afterwards — commits, branches,
+worktrees, config outside the repository. Reversibility covers how one operation is performed. That is why a
+reversible route may be move-instead-of-delete or dry-run-first but may not be _make a branch_: a branch is a
+new thing to create, so it falls back under Scope and needs the user's word. Folding either rule into the other
+resolves the collision by deleting the boundary, and the collision comes straight back — the same situation then
+has two correct answers depending on which rule the model reaches first.
+
+**Reporting is the last line of the prompt on purpose.** Brevity precedes it so that "failure output and
+anything you did not verify are not brevity" can follow and override it. Reversed, the unqualified brevity rule
+lands last and is the one that wins.
+
+Craft rules — minimum code, nothing speculative, decide what proves it worked before starting — came from
+Andrej Karpathy's four guidelines. Honest reporting and the ask-if-unclear clause came from Claude Code, which
+the user works with daily and rates above the rest for asking well while still executing well. "Never name a
+tool" from Cursor. Codex contributes the ambition-versus-precision split and brevity-as-a-default; Cursor's newer
+prompt is the counter-example, mandating status narration between tool batches, which is the opposite of what a
+terminal user wants.
+
+How these were validated, because a prompt read by its author proves nothing. Six prompts were run side by side
+— Claude Code, Cursor, Codex, MiMo Code, and this one before and after the fork rule — against identical
+first messages. On "як краще зробити лендинг для кафе?" all six answered instead of building, so the missing
+"a question is not a task" rule was not needed and was not added. On "виправ баг в auth" the results split:
+Claude Code missed the fork, MiMo caught it but offered no options and answered in English, and this prompt
+named four candidate subsystems from the repository. The simulation runs one model through one harness, so it
+isolates the prompt and does not transfer to the real products; treat it as evidence about the text, not about
+the tools.
+
 ## Session Core
 
 - Keep durable events minimal: record irreducible new facts and do not repeat state derivable by folding the ordered aggregate history. Enrich projections and read models with previous or derived state when consumers need self-contained views.

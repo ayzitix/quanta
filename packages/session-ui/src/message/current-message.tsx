@@ -1,5 +1,5 @@
 import type { SessionMessageAssistant, SessionMessageAssistantTool, SessionMessageUser } from "@opencode/client/promise"
-import { Match, Switch, type ComponentProps } from "solid-js"
+import { Match, Switch, type ComponentProps, type JSX } from "solid-js"
 import type { SessionUserActions, SessionUserAttachmentReference, SessionUserComment } from "../actions"
 import { AssistantReasoningContent, AssistantTextContent, CurrentUserMessageDisplay } from "./message-content"
 import {
@@ -26,6 +26,7 @@ export function SessionUserMessage(props: {
   historicalAgent: string
   historicalModel: SessionMessageAssistant["model"]
   actions?: SessionUserActions
+  modelPicker?: (input: { onClose: () => void }) => JSX.Element
 }) {
   return (
     <CurrentUserMessageDisplay
@@ -38,6 +39,7 @@ export function SessionUserMessage(props: {
       agent={props.historicalAgent}
       model={props.historicalModel}
       actions={props.actions}
+      modelPicker={props.modelPicker}
     />
   )
 }
