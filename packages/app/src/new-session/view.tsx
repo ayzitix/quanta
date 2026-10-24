@@ -60,8 +60,19 @@ export function NewSessionView(props: {
           active={props.composer.state.drag === "active"}
           input={props.composer.model.selection.current()?.capabilities.input}
         />
-        <div class="absolute inset-0 flex items-center justify-center px-6">
+        <div class="absolute inset-0 flex flex-col items-center justify-end px-6 pb-4">
           <div class={NEW_SESSION_CONTENT_WIDTH}>
+            <NewSessionTips
+              selection={props.composer.model.selection}
+              onDone={props.composer.restoreFocus}
+              workspaceEligible={
+                !!props.project.selected() &&
+                props.workspace.bar.visible() &&
+                props.workspace.selection.value() !== "create" &&
+                props.workspace.project.managed() === 0
+              }
+              onWorkspace={() => select("create")}
+            />
             {/* The context row sits above the tray and hangs off its leading edge, not centred under the
                 bar. It names where the prompt is going, which is the sentence's own furniture, so it reads
                 with the field it qualifies; centred underneath it read as a status line for the whole panel
@@ -104,17 +115,6 @@ export function NewSessionView(props: {
             </div>
           </div>
         </div>
-        <NewSessionTips
-          selection={props.composer.model.selection}
-          onDone={props.composer.restoreFocus}
-          workspaceEligible={
-            !!props.project.selected() &&
-            props.workspace.bar.visible() &&
-            props.workspace.selection.value() !== "create" &&
-            props.workspace.project.managed() === 0
-          }
-          onWorkspace={() => select("create")}
-        />
       </div>
     </div>
   )
@@ -206,7 +206,7 @@ function NewSessionTips(props: {
 
   return (
     <Show when={presence.present()}>
-      <div class="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center px-10">
+      <div class="pointer-events-none mb-2 flex justify-center">
         <div
           ref={setRef}
           data-component="new-session-tip"
